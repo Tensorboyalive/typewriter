@@ -1,15 +1,18 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { ArrowLeft, Trash2, Sparkles } from 'lucide-react'
 import { useStore } from '../store'
 import { CONTENT_TYPES, STATUSES, type ProjectStatus } from '../types'
 import { Select } from './Select'
 import { Timer } from './Timer'
+import { Repurposer } from './Repurposer'
 
 export function ScriptEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { projects, updateProject, deleteProject } = useStore()
   const project = projects.find(p => p.id === id)
+  const [showRepurposer, setShowRepurposer] = useState(false)
 
   if (!project) {
     return (
@@ -79,6 +82,15 @@ export function ScriptEditor() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {project.script.trim().length > 20 && (
+            <button
+              onClick={() => setShowRepurposer(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blueprint/10 text-blueprint rounded-md text-[11px] uppercase tracking-[0.1em] font-medium hover:bg-blueprint/20 transition-colors"
+            >
+              <Sparkles size={13} />
+              Repurpose
+            </button>
+          )}
           <Timer />
           <button
             onClick={() => {
@@ -113,6 +125,14 @@ export function ScriptEditor() {
           className="w-full min-h-[500px] bg-transparent text-ink leading-relaxed resize-none focus:outline-none text-[15px]"
         />
       </div>
+
+      <Repurposer
+        script={project.script}
+        title={project.title}
+        contentType={project.type}
+        isOpen={showRepurposer}
+        onClose={() => setShowRepurposer(false)}
+      />
     </div>
   )
 }
