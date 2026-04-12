@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #f0f4f8;
+  --color-surface: #ffffff;
+  --color-ink: #1a2b3d;
+  --color-ink-secondary: #5a7184;
+  --color-ink-muted: #94a3b8;
+  --color-line: #d0dbe6;
+  --color-line-light: #e2eaf2;
+  --color-blueprint: #3b82f6;
+  --color-blueprint-light: #dbeafe;
+  --color-blueprint-dark: #2563eb;
+  --color-danger: #ef4444;
+  --color-danger-light: #fee2e2;
+  --color-success: #10b981;
+  --color-success-light: #d1fae5;
+  --color-warning: #f59e0b;
+  --color-warning-light: #fef3c7;
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.input {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-line);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  outline: none;
+  transition: box-shadow 0.15s;
+}
+
+.input:focus {
+  box-shadow: 0 0 0 2px var(--color-blueprint);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
+
+::selection {
+  background: var(--color-blueprint-light);
+  color: var(--color-ink);
+}
