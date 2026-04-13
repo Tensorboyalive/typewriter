@@ -28,7 +28,7 @@ interface StoreContextType {
   deleteChannel: (id: string) => Promise<void>
 
   teamMembers: TeamMemberWithProfile[]
-  inviteTeamMember: (email: string, role: UserRole) => Promise<{ error: string | null }>
+  inviteTeamMember: (email: string, role: UserRole, allChannels?: boolean) => Promise<{ error: string | null }>
   refreshTeamMembers: () => Promise<void>
 
   projects: Project[]
@@ -174,42 +174,48 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (!data) return
     const members: TeamMemberWithProfile[] = await Promise.all(
       data.map(async (tm: { id: string; user_id: string; channel_id: string; role: string }) => {
-        const { data: prof } = await supabase.from('profiles').select('name').eq('id', tm.user_id).single()
+        const { data: prof } = await supabase.from('profiles').select('display_name, email').eq('id', tm.user_id).single()
         return {
           id: tm.id,
           user_id: tm.user_id,
           channel_id: tm.channel_id,
           role: tm.role as UserRole,
-          profile_name: prof?.name || 'Unnamed',
-          profile_email: null,
+          profile_name: prof?.display_name || 'Unnamed',
+          profile_email: prof?.email || null,
         }
       })
     )
     setTeamMembers(members)
   }, [activeChannelId])
 
-  const inviteTeamMember = async (email: string, role: UserRole): Promise<{ error: string | null }> => {
+  const inviteTeamMember = async (email: string, role: UserRole, allChannels = false): Promise<{ error: string | null }> => {
     if (!activeChannelId || !user) return { error: 'No active channel' }
-    // Look up user by email in profiles table (migration 011 added email column)
-    const { data: matchedProfiles } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email.toLowerCase().trim())
-      .limit(1)
-    if (!matchedProfiles || matchedProfiles.length === 0) {
+    // Use SECURITY DEFINER RPC to bypass RLS for cross-user email lookup
+    const { data: foundId, error: rpcError } = await supabase
+      .rpc('lookup_user_by_email', { lookup_email: email })
+    if (rpcError || !foundId) {
       return { error: 'No user found with that email. They must sign up first.' }
     }
-    const targetUserId = matchedProfiles[0].id
-    const { error } = await supabase.from('team_members').insert({
-      user_id: targetUserId,
-      channel_id: activeChannelId,
-      role,
-      invited_by: user.id,
-    })
-    if (error) {
-      if (error.code === '23505') return { error: 'User is already a team member' }
-      return { error: error.message }
+    const targetUserId = foundId as string
+
+    // Determine which channels to add to
+    const targetChannels = allChannels
+      ? channels.filter(c => c.user_id === user.id).map(c => c.id)
+      : [activeChannelId]
+
+    const errors: string[] = []
+    for (const chId of targetChannels) {
+      const { error } = await supabase.from('team_members').insert({
+        user_id: targetUserId,
+        channel_id: chId,
+        role,
+        invited_by: user.id,
+      })
+      if (error) {
+        if (error.code !== '23505') errors.push(error.message) // skip "already a member"
+      }
     }
+    if (errors.length > 0) return { error: errors.join('; ') }
     await refreshTeamMembers()
     return { error: null }
   }

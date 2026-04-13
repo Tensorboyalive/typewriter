@@ -16,7 +16,7 @@ interface TeamMemberRow {
   user_id: string
   channel_id: string
   role: UserRole
-  profile: { name: string; avatar_url: string | null } | null
+  profile: { display_name: string; avatar_url: string | null } | null
   email: string | null
 }
 
@@ -25,13 +25,14 @@ export function Settings() {
   const [channelName, setChannelName] = useState(activeChannel?.name ?? '')
   const [channelHandle, setChannelHandle] = useState(activeChannel?.handle ?? '')
   const [channelNiche, setChannelNiche] = useState(activeChannel?.niche ?? '')
-  const [profileName, setProfileName] = useState(profile?.name ?? '')
+  const [profileName, setProfileName] = useState(profile?.display_name ?? '')
   const [savedProfile, setSavedProfile] = useState(false)
   const [savedChannel, setSavedChannel] = useState(false)
 
   const [teamMembers, setTeamMembers] = useState<TeamMemberRow[]>([])
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<UserRole>('editor')
+  const [inviteAllChannels, setInviteAllChannels] = useState(false)
   const [inviting, setInviting] = useState(false)
   const [teamLoading, setTeamLoading] = useState(true)
 
@@ -44,7 +45,7 @@ export function Settings() {
   }, [activeChannel])
 
   useEffect(() => {
-    setProfileName(profile?.name ?? '')
+    setProfileName(profile?.display_name ?? '')
   }, [profile])
 
   // Fetch team members
@@ -62,18 +63,13 @@ export function Settings() {
           data.map(async (tm: { id: string; user_id: string; channel_id: string; role: string }) => {
             const { data: prof } = await supabase
               .from('profiles')
-              .select('name, avatar_url')
-              .eq('id', tm.user_id)
-              .single()
-            const { data: authUser } = await supabase
-              .from('profiles')
-              .select('id')
+              .select('display_name, avatar_url')
               .eq('id', tm.user_id)
               .single()
             return {
               ...tm,
               profile: prof,
-              email: authUser ? null : null, // email not exposed via profiles
+              email: null,
             } as TeamMemberRow
           })
         )
@@ -85,7 +81,7 @@ export function Settings() {
 
   const handleSaveProfile = async () => {
     if (!user) return
-    await supabase.from('profiles').update({ name: profileName, updated_at: new Date().toISOString() }).eq('id', user.id)
+    await supabase.from('profiles').update({ display_name: profileName, updated_at: new Date().toISOString() }).eq('id', user.id)
     setSavedProfile(true)
     setTimeout(() => setSavedProfile(false), 1500)
   }
@@ -106,7 +102,7 @@ export function Settings() {
     setInviteError(null)
     setInviteSuccess(false)
 
-    const { error } = await inviteTeamMember(inviteEmail.trim(), inviteRole)
+    const { error } = await inviteTeamMember(inviteEmail.trim(), inviteRole, inviteAllChannels)
     if (error) {
       setInviteError(error)
     } else {
@@ -122,7 +118,7 @@ export function Settings() {
           data.map(async (tm: { id: string; user_id: string; channel_id: string; role: string }) => {
             const { data: prof } = await supabase
               .from('profiles')
-              .select('name, avatar_url')
+              .select('display_name, avatar_url')
               .eq('id', tm.user_id)
               .single()
             return { ...tm, profile: prof, email: null } as TeamMemberRow
@@ -280,7 +276,7 @@ export function Settings() {
                 <div key={member.id} className="flex items-center gap-3 px-3 py-2.5 bg-canvas border border-line rounded-md">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-ink font-medium">
-                      {member.profile?.name || 'Unnamed'}
+                      {member.profile?.display_name || 'Unnamed'}
                       {member.user_id === user?.id && (
                         <span className="text-[10px] text-ink-muted ml-2">(you)</span>
                       )}
@@ -348,9 +344,22 @@ export function Settings() {
                   disabled={!inviteEmail.trim() || inviting}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-blueprint text-white rounded-md text-sm disabled:opacity-50"
                 >
-                  <Plus size={14} /> Invite
+                  <Plus size={14} /> {inviting ? 'Inviting...' : 'Invite'}
                 </button>
               </div>
+              {channels.length > 1 && (
+                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={inviteAllChannels}
+                    onChange={e => setInviteAllChannels(e.target.checked)}
+                    className="rounded border-line text-blueprint"
+                  />
+                  <span className="text-[11px] text-ink-secondary">
+                    Add to all channels ({channels.filter(c => c.user_id === user?.id).length})
+                  </span>
+                </label>
+              )}
               {inviteError && (
                 <p className="text-[11px] text-danger mt-2">{inviteError}</p>
               )}

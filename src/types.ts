@@ -150,9 +150,10 @@ export interface TeamMember {
 
 export interface Profile {
   id: string
-  name: string
+  display_name: string
   role: UserRole
   avatar_url: string | null
+  email: string | null
   created_at: string
   updated_at: string
 }
