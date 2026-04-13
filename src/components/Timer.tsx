@@ -21,7 +21,7 @@ export function Timer() {
           setStarted(false)
           addSession({
             duration: durationRef.current * 60,
-            completedAt: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
           })
           if (Notification.permission === 'granted') {
             new Notification('Session Complete', {

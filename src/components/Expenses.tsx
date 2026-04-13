@@ -57,7 +57,7 @@ export function Expenses() {
       description: expDesc.trim(),
       amount,
       category: expCategory,
-      projectId: expProjectId || undefined,
+      project_id: expProjectId || null,
       date: expDate,
     })
     setExpDesc('')
@@ -74,7 +74,7 @@ export function Expenses() {
       description: incDesc.trim(),
       amount,
       source: incSource,
-      projectId: incProjectId || undefined,
+      project_id: incProjectId || null,
       date: incDate,
     })
     setIncDesc('')
@@ -100,7 +100,7 @@ export function Expenses() {
       description: e.description,
       amount: e.amount,
       label: e.category,
-      project: projects.find(p => p.id === e.projectId)?.title,
+      project: projects.find(p => p.id === e.project_id)?.title,
       date: e.date,
     })),
     ...income.map(i => ({
@@ -109,7 +109,7 @@ export function Expenses() {
       description: i.description,
       amount: i.amount,
       label: i.source,
-      project: projects.find(p => p.id === i.projectId)?.title,
+      project: projects.find(p => p.id === i.project_id)?.title,
       date: i.date,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -397,11 +397,12 @@ export function Expenses() {
                   </td>
                   <td className="p-3">
                     <button
-                      onClick={() =>
+                      onClick={() => {
+                        if (!confirm('Delete this entry?')) return
                         entry.kind === 'expense'
                           ? deleteExpense(entry.id)
                           : deleteIncome(entry.id)
-                      }
+                      }}
                       className="text-ink-muted hover:text-danger transition-colors"
                     >
                       <Trash2 size={14} />

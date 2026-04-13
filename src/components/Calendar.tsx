@@ -14,11 +14,11 @@ import {
 } from 'date-fns'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useStore } from '../store'
-import { CONTENT_TYPES, type ContentType } from '../types'
+import { CONTENT_TYPES, BANK_PLATFORMS, type ContentType } from '../types'
 import { Select } from './Select'
 
 export function Calendar() {
-  const { projects, addProject } = useStore()
+  const { projects, addProject, bankItems } = useStore()
   const [current, setCurrent] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [newTitle, setNewTitle] = useState('')
@@ -32,15 +32,18 @@ export function Calendar() {
   })
 
   const getProjectsForDay = (date: Date) =>
-    projects.filter(p => p.scheduledDate && isSameDay(new Date(p.scheduledDate), date))
+    projects.filter(p => p.scheduled_date && isSameDay(new Date(p.scheduled_date), date))
+
+  const getBankItemsForDay = (date: Date) =>
+    bankItems.filter(b => b.scheduled_date && isSameDay(new Date(b.scheduled_date), date))
 
   const handleAdd = () => {
     if (!newTitle.trim() || !selectedDate) return
     addProject({
       title: newTitle.trim(),
       type: newType,
-      status: 'ideation',
-      scheduledDate: selectedDate.toISOString(),
+      status: 'idea',
+      scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
       script: '',
       description: '',
     })
@@ -96,6 +99,7 @@ export function Calendar() {
       <div className="grid grid-cols-7 border-t border-l border-line rounded-lg overflow-hidden">
         {days.map(day => {
           const dayProjects = getProjectsForDay(day)
+          const dayBankItems = getBankItemsForDay(day)
           const inMonth = isSameMonth(day, current)
           const today = isToday(day)
           const selected = selectedDate && isSameDay(day, selectedDate)
@@ -121,12 +125,21 @@ export function Calendar() {
                     <div
                       key={p.id}
                       className="text-[11px] px-1.5 py-0.5 rounded truncate font-medium"
-                      style={{
-                        backgroundColor: t?.color + '18',
-                        color: t?.color,
-                      }}
+                      style={{ backgroundColor: t?.color + '18', color: t?.color }}
                     >
                       {p.title}
+                    </div>
+                  )
+                })}
+                {dayBankItems.map(b => {
+                  const plat = BANK_PLATFORMS.find(bp => bp.id === b.platform)
+                  return (
+                    <div
+                      key={b.id}
+                      className="text-[10px] px-1.5 py-0.5 rounded truncate font-medium border border-dashed"
+                      style={{ borderColor: plat?.color + '60', color: plat?.color }}
+                    >
+                      {plat?.label}: {b.content_text.slice(0, 25)}…
                     </div>
                   )
                 })}
@@ -178,18 +191,28 @@ export function Calendar() {
               {getProjectsForDay(selectedDate).map(p => {
                 const t = CONTENT_TYPES.find(ct => ct.id === p.type)
                 return (
-                  <div
-                    key={p.id}
-                    className="flex items-center gap-2 text-sm text-ink-secondary"
-                  >
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: t?.color }}
-                    />
+                  <div key={p.id} className="flex items-center gap-2 text-sm text-ink-secondary">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t?.color }} />
                     {p.title}
-                    <span className="text-[10px] uppercase tracking-wider text-ink-muted">
-                      {p.status}
-                    </span>
+                    <span className="text-[10px] uppercase tracking-wider text-ink-muted">{p.status}</span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Show scheduled bank items for selected day */}
+          {getBankItemsForDay(selectedDate).length > 0 && (
+            <div className="mt-3 pt-3 border-t border-line-light space-y-1">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Scheduled Content</p>
+              {getBankItemsForDay(selectedDate).map(b => {
+                const plat = BANK_PLATFORMS.find(bp => bp.id === b.platform)
+                return (
+                  <div key={b.id} className="flex items-center gap-2 text-sm text-ink-secondary">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: plat?.color }} />
+                    <span className="text-[10px] font-medium" style={{ color: plat?.color }}>{plat?.label}</span>
+                    <span className="truncate">{b.content_text.slice(0, 40)}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-ink-muted">{b.status}</span>
                   </div>
                 )
               })}
