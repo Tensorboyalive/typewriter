@@ -9,7 +9,7 @@ import { Timer } from './Timer'
 export function ScriptEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { projects, updateProject, deleteProject, teamMembers, userRole } = useStore()
+  const { projects, updateProject, deleteProject, teamMembers, effectiveRole } = useStore()
   const project = projects.find(p => p.id === id)
   const [teamOpen, setTeamOpen] = useState(
     () => !!(project?.assigned_to || project?.delivery_link || project?.posted_link)
@@ -30,8 +30,8 @@ export function ScriptEditor() {
   }
 
   const typeInfo = CONTENT_TYPES.find(t => t.id === project.type)
-  const canAssign = userRole === 'admin' || userRole === 'pa'
-  const canEditDelivery = userRole === 'editor' || canAssign
+  const canAssign = effectiveRole === 'admin' || effectiveRole === 'pa'
+  const canEditDelivery = effectiveRole === 'editor' || canAssign
   const canEditPosted = canAssign
 
   const handleAssign = (userId: string) => {

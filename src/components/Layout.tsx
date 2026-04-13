@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, Library, CheckSquare, Settings, ClipboardList, FileOutput, Handshake, Eye } from 'lucide-react'
 import { useStore } from '../store'
@@ -26,9 +25,7 @@ const VIEW_AS_ROLES: { id: UserRole | 'self'; label: string }[] = [
 ]
 
 export function Layout() {
-  const { signOut, exportAllData, userRole } = useStore()
-  const [viewAs, setViewAs] = useState<UserRole | 'self'>('self')
-  const effectiveRole = viewAs === 'self' ? userRole : viewAs
+  const { signOut, exportAllData, userRole, effectiveRole, viewAs, setViewAs } = useStore()
   const isPreviewMode = viewAs !== 'self'
   const NAV = NAV_ALL.filter(n => n.roles.includes(effectiveRole))
 

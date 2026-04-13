@@ -15,6 +15,9 @@ interface TeamMemberWithProfile {
 interface StoreContextType {
   user: User | null
   userRole: UserRole
+  effectiveRole: UserRole
+  viewAs: UserRole | 'self'
+  setViewAs: (role: UserRole | 'self') => void
   profile: Profile | null
   authLoading: boolean
   signIn: (email: string) => Promise<{ error: string | null }>
@@ -92,7 +95,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [userRole, setUserRole] = useState<UserRole>('editor')
+  const [viewAs, setViewAs] = useState<UserRole | 'self'>('self')
   const [profile, setProfile] = useState<Profile | null>(null)
+
+  const effectiveRole: UserRole = viewAs === 'self' ? userRole : viewAs
 
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
@@ -502,7 +508,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   return (
     <StoreContext.Provider value={{
-      user, userRole, profile, authLoading, signIn, signOut,
+      user, userRole, effectiveRole, viewAs, setViewAs, profile, authLoading, signIn, signOut,
       channels, activeChannel, switchChannel, addChannel, updateChannel, deleteChannel,
       teamMembers, inviteTeamMember, refreshTeamMembers,
       projects, expenses, income, sessions, notes, conversionRate, dataLoading,

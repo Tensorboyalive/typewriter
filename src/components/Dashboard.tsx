@@ -16,7 +16,7 @@ import { STATUSES, CONTENT_TYPES } from '../types'
 
 export function Dashboard() {
   const navigate = useNavigate()
-  const { user, userRole, projects, expenses, income, sessions, bankItems, checklistItems } = useStore()
+  const { user, effectiveRole, projects, expenses, income, sessions, bankItems, checklistItems } = useStore()
 
   const now = new Date()
   const hour = now.getHours()
@@ -78,7 +78,7 @@ export function Dashboard() {
   const deliveredProjects = projects.filter(p => p.delivery_link)
 
   // ─── Editor Dashboard ──────────────────────────
-  if (userRole === 'editor') {
+  if (effectiveRole === 'editor') {
     return (
       <div className="p-8 max-w-5xl">
         <div className="mb-10">
@@ -165,7 +165,7 @@ export function Dashboard() {
   }
 
   // ─── PA Dashboard ──────────────────────────────
-  if (userRole === 'pa') {
+  if (effectiveRole === 'pa') {
     return (
       <div className="p-8 max-w-5xl">
         <div className="mb-10">

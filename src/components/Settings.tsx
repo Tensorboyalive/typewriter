@@ -21,7 +21,7 @@ interface TeamMemberRow {
 }
 
 export function Settings() {
-  const { user, userRole, profile, activeChannel, updateChannel, channels, inviteTeamMember, checklistTemplates, addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate } = useStore()
+  const { user, effectiveRole, profile, activeChannel, updateChannel, channels, inviteTeamMember, checklistTemplates, addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate } = useStore()
   const [channelName, setChannelName] = useState(activeChannel?.name ?? '')
   const [channelHandle, setChannelHandle] = useState(activeChannel?.handle ?? '')
   const [channelNiche, setChannelNiche] = useState(activeChannel?.niche ?? '')
@@ -36,7 +36,7 @@ export function Settings() {
   const [inviting, setInviting] = useState(false)
   const [teamLoading, setTeamLoading] = useState(true)
 
-  const isAdmin = userRole === 'admin'
+  const isAdmin = effectiveRole === 'admin'
 
   useEffect(() => {
     setChannelName(activeChannel?.name ?? '')
@@ -142,7 +142,7 @@ export function Settings() {
     setTeamMembers(prev => prev.map(m => (m.id === memberId ? { ...m, role: newRole } : m)))
   }
 
-  const currentRole = ROLES.find(r => r.id === userRole)
+  const currentRole = ROLES.find(r => r.id === effectiveRole)
 
   return (
     <div className="p-8 max-w-3xl">
@@ -375,7 +375,7 @@ export function Settings() {
       </section>
 
       {/* Daily Checklist Templates */}
-      {(userRole === 'admin' || userRole === 'pa') && (
+      {(effectiveRole === 'admin' || effectiveRole === 'pa') && (
         <TemplateManager
           templates={checklistTemplates}
           onAdd={addChecklistTemplate}
