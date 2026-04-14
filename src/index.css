@@ -20,6 +20,29 @@
   --font-sans: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
 }
 
+/* Dark mode — activated by adding `dark` class on <html>.
+   Variables override the tokens above; all `bg-canvas`, `text-ink`, etc.
+   utilities resolve via var() so they pick these up automatically. */
+html.dark {
+  color-scheme: dark;
+  --color-canvas: #0b1220;
+  --color-surface: #111a2e;
+  --color-ink: #e7eef7;
+  --color-ink-secondary: #a3b3c7;
+  --color-ink-muted: #64748b;
+  --color-line: #1e293b;
+  --color-line-light: #2a3547;
+  --color-blueprint: #fb923c;
+  --color-blueprint-light: rgba(251, 146, 60, 0.15);
+  --color-blueprint-dark: #f97316;
+  --color-danger: #f87171;
+  --color-danger-light: rgba(248, 113, 113, 0.15);
+  --color-success: #34d399;
+  --color-success-light: rgba(52, 211, 153, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-light: rgba(251, 191, 36, 0.15);
+}
+
 body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
@@ -29,6 +52,12 @@ body {
   background-size: 24px 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+html.dark body {
+  background-image:
+    linear-gradient(rgba(251, 146, 60, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(251, 146, 60, 0.05) 1px, transparent 1px);
 }
 
 .input {

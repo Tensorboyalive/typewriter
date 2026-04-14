@@ -2,6 +2,8 @@ import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput } from 'lucide-react'
 import { useStore } from '../store'
 import { ChannelSwitcher } from './ChannelSwitcher'
+import { ThemeToggle } from './ThemeToggle'
+import { MusicPlayer } from './MusicPlayer'
 
 const NAV = [
   { to: '/', icon: Home, label: 'Home' },
@@ -70,7 +72,12 @@ export function Layout() {
           <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Synced to cloud</p>
         </div>
       </aside>
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto relative">
+        {/* Floating top-right toolbar — theme toggle + music player */}
+        <div className="fixed top-4 right-4 z-30 flex items-start gap-2">
+          <ThemeToggle />
+          <MusicPlayer />
+        </div>
         <Outlet />
       </main>
     </div>

@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3, UserPlus } from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3 } from 'lucide-react'
 import { useStore } from '../store'
 import { STATUSES, CONTENT_TYPES, PLATFORMS, type ContentType, type Platform } from '../types'
 
 type ViewMode = 'list' | 'board'
 
 export function Kanban() {
-  const { projects, addProject, updateProject, teamMembers } = useStore()
+  const { projects, addProject } = useStore()
   const navigate = useNavigate()
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -18,8 +18,6 @@ export function Kanban() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all')
-
-  const canAssign = true
 
   const toggleGroup = (id: string) =>
     setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
@@ -42,18 +40,9 @@ export function Kanban() {
     if (project) navigate(`/projects/${project.id}`)
   }
 
-  const handleQuickAssign = async (e: React.MouseEvent, projectId: string, userId: string) => {
-    e.stopPropagation()
-    await updateProject(projectId, {
-      assigned_to: userId || null,
-      status: userId ? 'assigned' : undefined,
-    } as any)
-  }
-
   const renderProjectCard = (project: typeof projects[0], compact = false) => {
     const typeInfo = CONTENT_TYPES.find(t => t.id === project.type)
     const platInfo = PLATFORMS.find(p => p.id === project.platform)
-    const assignee = teamMembers.find(m => m.user_id === project.assigned_to)
 
     if (compact) {
       return (
@@ -88,26 +77,6 @@ export function Kanban() {
               <span className="text-[8px] px-1 py-0.5 rounded bg-warning-light text-warning font-medium">$</span>
             )}
           </div>
-          {/* Quick assign */}
-          {canAssign && (
-            <div className="mt-1.5 flex items-center gap-1">
-              <UserPlus size={10} className="text-ink-muted" />
-              <select
-                value={project.assigned_to ?? ''}
-                onClick={e => e.stopPropagation()}
-                onChange={e => handleQuickAssign(e as any, project.id, e.target.value)}
-                className="text-[10px] bg-transparent border-none text-ink-muted outline-none cursor-pointer max-w-[80px] truncate"
-              >
-                <option value="">Unassigned</option>
-                {teamMembers.filter(m => m.role === 'editor').map(m => (
-                  <option key={m.user_id} value={m.user_id}>{m.profile_name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-          {!canAssign && assignee && (
-            <p className="text-[10px] text-ink-muted mt-1">{assignee.profile_name}</p>
-          )}
         </div>
       )
     }
@@ -148,22 +117,6 @@ export function Kanban() {
           {project.delivery_link && <Link size={10} className="text-success" />}
           {project.is_brand_deal && (
             <span className="text-[9px] px-1 py-0.5 rounded bg-warning-light text-warning font-medium">$</span>
-          )}
-          {canAssign && (
-            <select
-              value={project.assigned_to ?? ''}
-              onClick={e => e.stopPropagation()}
-              onChange={e => handleQuickAssign(e as any, project.id, e.target.value)}
-              className="text-[10px] bg-canvas border border-line rounded px-1.5 py-0.5 text-ink-muted outline-none cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-            >
-              <option value="">Assign...</option>
-              {teamMembers.filter(m => m.role === 'editor').map(m => (
-                <option key={m.user_id} value={m.user_id}>{m.profile_name}</option>
-              ))}
-            </select>
-          )}
-          {assignee && (
-            <span className="text-[10px] text-ink-muted">{assignee.profile_name}</span>
           )}
         </div>
       </div>
