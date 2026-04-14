@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   format,
   startOfMonth,
@@ -18,6 +19,7 @@ import { CONTENT_TYPES, type ContentType } from '../types'
 import { Select } from './Select'
 
 export function Calendar() {
+  const navigate = useNavigate()
   const { projects, addProject } = useStore()
   const [current, setCurrent] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
@@ -118,13 +120,18 @@ export function Calendar() {
                 {dayProjects.map(p => {
                   const t = CONTENT_TYPES.find(ct => ct.id === p.type)
                   return (
-                    <div
+                    <button
                       key={p.id}
-                      className="text-[11px] px-1.5 py-0.5 rounded truncate font-medium"
+                      onClick={e => {
+                        e.stopPropagation()
+                        navigate(`/projects/${p.id}`)
+                      }}
+                      className="block w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all"
                       style={{ backgroundColor: t?.color + '18', color: t?.color }}
+                      title={p.title}
                     >
                       {p.title}
-                    </div>
+                    </button>
                   )
                 })}
               </div>
@@ -169,17 +176,24 @@ export function Calendar() {
             </button>
           </div>
 
-          {/* Show existing projects for selected day */}
+          {/* Show existing projects for selected day — click to open */}
           {getProjectsForDay(selectedDate).length > 0 && (
             <div className="mt-3 pt-3 border-t border-line-light space-y-1">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">
+                On this day — click to open
+              </p>
               {getProjectsForDay(selectedDate).map(p => {
                 const t = CONTENT_TYPES.find(ct => ct.id === p.type)
                 return (
-                  <div key={p.id} className="flex items-center gap-2 text-sm text-ink-secondary">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t?.color }} />
-                    {p.title}
-                    <span className="text-[10px] uppercase tracking-wider text-ink-muted">{p.status}</span>
-                  </div>
+                  <button
+                    key={p.id}
+                    onClick={() => navigate(`/projects/${p.id}`)}
+                    className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t?.color }} />
+                    <span className="flex-1 truncate">{p.title}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{p.status}</span>
+                  </button>
                 )
               })}
             </div>
