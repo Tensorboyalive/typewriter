@@ -12,6 +12,7 @@ import {
 } from 'date-fns'
 import { Plus, ArrowRight, CheckSquare, BookOpen, CalendarClock } from 'lucide-react'
 import { useStore } from '../store'
+import { AdminLock } from './AdminLock'
 import { STATUSES, CONTENT_TYPES } from '../types'
 
 export function Dashboard() {
@@ -135,25 +136,27 @@ export function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-surface border border-line rounded-lg p-6">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-5">Finances (this month)</p>
-          <div className="space-y-4">
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Income</p>
-              <p className="text-3xl font-light text-success tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</p>
-            </div>
-            <div>
-              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Expenses</p>
-              <p className="text-3xl font-light text-danger tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="pt-3 border-t border-line-light">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Net</p>
-              <p className={`text-3xl font-light tabular-nums ${net >= 0 ? 'text-success' : 'text-danger'}`}>
-                {net >= 0 ? '+' : '-'}₹{Math.abs(net).toLocaleString('en-IN')}
-              </p>
+        <AdminLock variant="inline" label="Finances">
+          <div className="bg-surface border border-line rounded-lg p-6">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-5">Finances (this month)</p>
+            <div className="space-y-4">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Income</p>
+                <p className="text-3xl font-light text-success tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Expenses</p>
+                <p className="text-3xl font-light text-danger tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</p>
+              </div>
+              <div className="pt-3 border-t border-line-light">
+                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Net</p>
+                <p className={`text-3xl font-light tabular-nums ${net >= 0 ? 'text-success' : 'text-danger'}`}>
+                  {net >= 0 ? '+' : '-'}₹{Math.abs(net).toLocaleString('en-IN')}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </AdminLock>
       </div>
 
       {/* Per-channel breakdown */}

@@ -42,7 +42,7 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<AdminLock label="Dashboard"><Dashboard /></AdminLock>} />
+          <Route path="/" element={<Dashboard />} />
           <Route path="/today" element={<Today />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/projects" element={<Kanban />} />

@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X } from 'lucide-react'
+import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock } from 'lucide-react'
 import { useStore } from '../store'
 import { ChannelSwitcher } from './ChannelSwitcher'
 import { ThemeToggle } from './ThemeToggle'
 import { MusicPlayer } from './MusicPlayer'
+import { isUnlocked, lockAdmin } from './AdminLock'
 
 const NAV = [
   { to: '/', icon: Home, label: 'Home' },
@@ -21,6 +22,16 @@ const NAV = [
 export function Layout() {
   const { signOut, exportAllData } = useStore()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [unlocked, setUnlocked] = useState(isUnlocked())
+  useEffect(() => {
+    const h = () => setUnlocked(isUnlocked())
+    window.addEventListener('tw-admin-unlock-change', h)
+    window.addEventListener('storage', h)
+    return () => {
+      window.removeEventListener('tw-admin-unlock-change', h)
+      window.removeEventListener('storage', h)
+    }
+  }, [])
 
   const handleExport = async () => {
     const data = await exportAllData()
@@ -67,6 +78,12 @@ export function Layout() {
       </nav>
 
       <div className="p-3 space-y-1 border-t border-line">
+        {unlocked && (
+          <button onClick={lockAdmin}
+            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-secondary hover:bg-canvas transition-colors w-full">
+            <Lock size={16} strokeWidth={1.5} /> Lock admin
+          </button>
+        )}
         <button onClick={handleExport}
           className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-secondary hover:bg-canvas transition-colors w-full">
           <Download size={16} strokeWidth={1.5} /> Export data

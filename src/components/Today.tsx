@@ -83,14 +83,16 @@ export function Today() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="px-4 sm:px-6 py-4 border-b border-line bg-surface/50">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+      {/* Header. pr reserves space for floating theme/music buttons top-right. */}
+      <div className="px-4 sm:px-6 py-4 pr-4 md:pr-32 border-b border-line bg-surface/50">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-ink-muted">Today</p>
             <h1 className="text-xl sm:text-2xl font-light text-ink">{format(new Date(), 'EEEE, MMMM d')}</h1>
           </div>
-          <PersonaSwitcher />
+          <div className="shrink-0">
+            <PersonaSwitcher />
+          </div>
         </div>
 
         {/* MIT pinned slot */}
