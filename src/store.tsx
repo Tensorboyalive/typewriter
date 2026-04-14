@@ -219,7 +219,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Channel-scoped fetch: projects, sessions, editor_outputs tied to activeChannelId
   // User-scoped fetch: expenses, income, notes, checklist, templates — unified across channels
-  const fetchData = useCallback(async (channelId: string) => {
+  const fetchData = useCallback(async (channelId: string, channelIds: string[]) => {
     setDataLoading(true)
     localStorage.setItem('tw-active-channel', channelId)
     const today = new Date().toISOString().split('T')[0]
@@ -236,9 +236,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.from('checklist_items').select('*').eq('user_id', user!.id).eq('date', today).is('archived_at', null).order('created_at'),
       supabase.from('checklist_templates').select('*').eq('user_id', user!.id).order('sort_order'),
       supabase.from('user_settings').select('*').eq('user_id', user!.id).single(),
-      // Cross-channel aggregate for Dashboard
-      supabase.from('projects').select('*').eq('user_id', user!.id).is('archived_at', null).order('created_at', { ascending: false }),
-      supabase.from('timer_sessions').select('*').eq('user_id', user!.id).is('archived_at', null).order('completed_at', { ascending: false }),
+      // Cross-channel aggregate for Dashboard — scoped to all channels the user
+      // can see (owned + team member), so PA and owner get the same view.
+      supabase.from('projects').select('*').in('channel_id', channelIds).is('archived_at', null).order('created_at', { ascending: false }),
+      supabase.from('timer_sessions').select('*').in('channel_id', channelIds).is('archived_at', null).order('completed_at', { ascending: false }),
     ])
 
     setProjects(pRes.data ?? [])
@@ -260,8 +261,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [activeChannelId, user, refreshTeamMembers])
 
   useEffect(() => {
-    if (activeChannelId && user) fetchData(activeChannelId)
-  }, [activeChannelId, user, fetchData])
+    if (activeChannelId && user && channels.length > 0) {
+      fetchData(activeChannelId, channels.map(c => c.id))
+    }
+  }, [activeChannelId, user, channels, fetchData])
 
   const signIn = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } })
