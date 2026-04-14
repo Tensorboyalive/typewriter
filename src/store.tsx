@@ -62,7 +62,7 @@ interface StoreContextType {
   conversionRate: number
   dataLoading: boolean
 
-  addProject: (p: { title: string; type: string; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string }) => Promise<Project | null>
+  addProject: (p: { title: string; type: string; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }) => Promise<Project | null>
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>
   deleteProject: (id: string) => Promise<void>
 
@@ -332,10 +332,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const addProject = async (p: { title: string; type: string; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string }) => {
+  const addProject = async (p: { title: string; type: string; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }) => {
     const { data, error } = await supabase.from('projects').insert({
       title: p.title, type: p.type, status: p.status, platform: p.platform ?? 'tb',
       scheduled_date: p.scheduled_date ?? null, script: p.script ?? '', description: p.description ?? '',
+      format: p.format ?? null,
       channel_id: activeChannelId!, user_id: user!.id,
     }).select().single()
     if (!error && data) {

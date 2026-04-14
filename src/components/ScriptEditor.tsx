@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Trash2, CalendarClock, Radio } from 'lucide-react'
 import { useStore } from '../store'
-import { CONTENT_TYPES, STATUSES, type ProjectStatus } from '../types'
+import { CONTENT_TYPES, CONTENT_FORMATS, STATUSES, type ProjectStatus, type ContentFormat } from '../types'
 import { Select } from './Select'
 import { Timer } from './Timer'
 
@@ -42,7 +42,7 @@ export function ScriptEditor() {
   return (
     <div className="h-full flex flex-col bg-canvas">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-8 py-4 border-b border-line bg-surface/90 backdrop-blur-sm">
+      <div className="flex items-center justify-between px-8 py-4 md:pr-40 border-b border-line bg-surface/90 backdrop-blur-sm">
         <div className="flex items-center gap-4 flex-1 min-w-0">
           <button
             onClick={() => navigate('/projects')}
@@ -75,6 +75,26 @@ export function ScriptEditor() {
                 options={STATUSES.map(s => ({ value: s.id, label: s.label }))}
                 compact
               />
+              {/* Content-format segmented control */}
+              <div className="flex items-center gap-1">
+                {CONTENT_FORMATS.map(f => {
+                  const active = project.format === f.id
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => updateProject(project.id, { format: f.id as ContentFormat })}
+                      className={`rounded-full px-2.5 py-0.5 text-[10px] border transition-colors ${
+                        active
+                          ? 'bg-blueprint-light text-blueprint border-blueprint'
+                          : 'bg-canvas border-line text-ink-secondary hover:border-blueprint/40'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

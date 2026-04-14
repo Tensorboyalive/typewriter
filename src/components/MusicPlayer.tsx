@@ -1,102 +1,107 @@
-import { useEffect, useRef, useState } from 'react'
-import { Music, Play, Pause, Volume2, X, ChevronRight } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Music, Play, Pause, X, ChevronRight } from 'lucide-react'
 import { STATIONS, type Station } from '../lib/stations'
 
-// Replaces the prior YouTube IFrame approach — which was fragile (embed
-// disabled, geo-blocks, CSP friction) — with a plain <audio> element pointed
-// at free SomaFM MP3 streams. No iframe, no window.YT, no script injection.
+// Iframe delegation: a plain <iframe> pointed at a YouTube Live embed URL.
+// The iframe owns its origin's CORS/CSP, which is why this architecture
+// sidesteps the issues we had with <audio> + SomaFM.
+//
+// Autoplay policy: YouTube embed autoplay only triggers when the iframe
+// MOUNTS in response to a user gesture. Our flow satisfies this — click
+// play → setPlaying(true) → iframe renders with autoplay=1.
+//
+// Volume: cross-origin iframes can't be controlled without the YT IFrame
+// API (which caused the original bugs we're here to fix). The OS/tab
+// volume is the only volume control — by design. No slider.
+//
+// Keyboard: press `M` to toggle play/pause.
 
 const STORAGE_KEY = 'tw-music'
 
 interface StoredState {
   stationId: string
-  volume: number
+  playing: boolean
 }
 
 function readStored(): StoredState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      return {
+        stationId: typeof parsed.stationId === 'string' ? parsed.stationId : STATIONS[0].id,
+        // Never auto-resume playback — browsers block autoplay on load anyway.
+        playing: false,
+      }
+    }
   } catch {
     // fallthrough
   }
-  return { stationId: STATIONS[0].id, volume: 0.4 }
+  return { stationId: STATIONS[0].id, playing: false }
 }
 
 export function MusicPlayer() {
   const [open, setOpen] = useState(false)
-  const [playing, setPlaying] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
   const stored = readStored()
   const [stationId, setStationId] = useState(stored.stationId)
-  const [volume, setVolume] = useState<number>(() => {
-    const v = stored.volume
-    // Migrate old 0–100 storage if encountered
-    return v > 1 ? Math.max(0, Math.min(1, v / 100)) : v
-  })
+  const [playing, setPlaying] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  // iframe key — bumped whenever we want to force remount (station change while playing)
+  const [iframeKey, setIframeKey] = useState(0)
 
-  const audioRef = useRef<HTMLAudioElement>(null)
   const station: Station = STATIONS.find(s => s.id === stationId) ?? STATIONS[0]
 
-  // Persist preferences
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ stationId, volume } as StoredState))
-  }, [stationId, volume])
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ stationId, playing } as StoredState))
+  }, [stationId, playing])
 
-  // Keep audio volume in sync
+  // Global keyboard shortcut: `M` toggles play/pause.
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = volume
-  }, [volume])
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'm' && e.key !== 'M') return
+      const tgt = e.target as HTMLElement | null
+      if (tgt && (tgt.tagName === 'INPUT' || tgt.tagName === 'TEXTAREA' || tgt.isContentEditable)) return
+      setPlaying(p => !p)
+      setError(null)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
-  // When station changes while playing, swap src and continue
-  useEffect(() => {
-    const a = audioRef.current
-    if (!a) return
+  const toggle = () => {
     setError(null)
-    const wasPlaying = playing
-    a.src = station.url
-    if (wasPlaying) {
-      a.play().catch(() => setError('Stream offline — try another'))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stationId])
+    setPlaying(p => !p)
+  }
 
-  const toggle = async () => {
-    const a = audioRef.current
-    if (!a) return
-    if (playing) {
-      a.pause()
-      setPlaying(false)
-    } else {
-      try {
-        if (!a.src) a.src = station.url
-        await a.play()
-        setPlaying(true)
-        setError(null)
-      } catch {
-        setError('Stream offline — try another')
-        setPlaying(false)
-      }
-    }
+  const pickStation = (id: string) => {
+    if (id === stationId && playing) return
+    setStationId(id)
+    setError(null)
+    // Force a fresh iframe mount so autoplay fires with the new URL.
+    setIframeKey(k => k + 1)
+    setPlaying(true)
   }
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        preload="none"
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onError={() => { setError('Stream offline — try another'); setPlaying(false) }}
-      />
+      {/* Hidden offscreen iframe — this is the audio source */}
+      {playing && (
+        <iframe
+          key={iframeKey}
+          title={`music-${station.id}`}
+          src={station.embedUrl}
+          allow="autoplay"
+          onError={() => { setError('Stream paused. Try another station.'); setPlaying(false) }}
+          style={{ position: 'fixed', left: '-9999px', width: 200, height: 120, border: 0 }}
+        />
+      )}
 
       {/* Collapsed button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
           aria-label="Open music player"
-          title="Music"
+          title="Music (press M to play/pause)"
           className="p-2 rounded-full bg-surface border border-line text-ink-secondary hover:text-ink hover:border-ink-muted transition-colors shadow-sm relative"
         >
           <Music size={16} />
@@ -112,7 +117,9 @@ export function MusicPlayer() {
           <div className="flex items-center justify-between px-3 py-2 border-b border-line-light">
             <div className="flex items-center gap-2">
               <Music size={14} className="text-blueprint" />
-              <p className="text-[11px] uppercase tracking-[0.15em] text-ink-secondary">Ambient</p>
+              <p className="text-[11px] uppercase tracking-[0.15em] text-ink-secondary">
+                {playing ? station.name : 'Music'}
+              </p>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close player"
               className="p-1 text-ink-muted hover:text-ink">
@@ -126,15 +133,13 @@ export function MusicPlayer() {
 
             <div className="mt-3 flex items-center gap-2">
               <button onClick={toggle}
+                title="Toggle (shortcut: M)"
                 className="p-2 rounded-full bg-blueprint text-white hover:bg-blueprint-dark transition-colors">
                 {playing ? <Pause size={16} /> : <Play size={16} />}
               </button>
-              <div className="flex items-center gap-2 flex-1">
-                <Volume2 size={14} className="text-ink-muted" />
-                <input type="range" min={0} max={100} value={Math.round(volume * 100)}
-                  onChange={e => setVolume(Number(e.target.value) / 100)}
-                  className="flex-1 accent-[color:var(--color-blueprint)]" />
-              </div>
+              <p className="text-[10px] text-ink-muted flex-1">
+                Use OS/tab volume. Press <kbd className="px-1 py-0.5 border border-line rounded text-[9px]">M</kbd> to toggle.
+              </p>
             </div>
 
             {error && <p className="mt-2 text-[11px] text-ink-muted">{error}</p>}
@@ -143,13 +148,14 @@ export function MusicPlayer() {
               <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-2">Stations</p>
               <div className="space-y-0.5 max-h-48 overflow-auto">
                 {STATIONS.map(s => (
-                  <button key={s.id} onClick={() => setStationId(s.id)}
+                  <button key={s.id} onClick={() => pickStation(s.id)}
                     className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-[12px] transition-colors ${
                       s.id === stationId ? 'bg-blueprint-light text-blueprint' : 'text-ink-secondary hover:bg-canvas'
                     }`}>
                     <ChevronRight size={12}
                       className={s.id === stationId ? 'opacity-100' : 'opacity-0'} />
-                    <span className="truncate">{s.name}</span>
+                    <span className="truncate flex-1">{s.name}</span>
+                    <span className="text-[10px] text-ink-muted">{s.vibe}</span>
                   </button>
                 ))}
               </div>

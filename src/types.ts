@@ -1,5 +1,12 @@
 export type ContentType = 'reel' | 'story' | 'post' | 'carousel' | 'thread' | 'article' | 'youtube' | 'short'
+export type ContentFormat = 'carousel' | 'text' | 'reel'
 export type ProjectStatus = 'idea' | 'scripted' | 'in_edit' | 'ready' | 'posted'
+
+export const CONTENT_FORMATS: { id: ContentFormat; label: string }[] = [
+  { id: 'carousel', label: 'Carousel' },
+  { id: 'text', label: 'Text Post' },
+  { id: 'reel', label: 'Reel' },
+]
 export type Platform = 'tb' | 'tmg' | 'linkedin' | 'twitter' | 'youtube' | 'substack' | 'cevi'
 export type TimeSlot = 'morning' | 'afternoon' | 'evening'
 
@@ -62,6 +69,7 @@ export interface Project {
   posted_at: string | null
   is_brand_deal: boolean
   deal_id: string | null
+  format?: ContentFormat | null
   created_at: string
 }
 

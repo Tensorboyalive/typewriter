@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   format,
@@ -9,8 +10,9 @@ import {
   isToday,
   isSameDay,
   eachDayOfInterval,
+  subDays,
 } from 'date-fns'
-import { Plus, ArrowRight, CheckSquare, BookOpen, CalendarClock } from 'lucide-react'
+import { Plus, ArrowRight, CheckSquare, BookOpen, CalendarClock, TrendingUp, TrendingDown } from 'lucide-react'
 import { useStore } from '../store'
 import { AdminLock } from './AdminLock'
 import { STATUSES, CONTENT_TYPES } from '../types'
@@ -152,7 +154,14 @@ export function Dashboard() {
         </div>
 
         <AdminLock variant="inline">
-          <FinancesDonut totalEarned={totalEarned} totalSpent={totalSpent} net={net} />
+          <FinancesHero
+            totalEarned={totalEarned}
+            totalSpent={totalSpent}
+            net={net}
+            income={income}
+            expenses={expenses}
+            now={now}
+          />
         </AdminLock>
       </div>
 
@@ -313,54 +322,146 @@ export function Dashboard() {
   )
 }
 
-// Inline SVG donut for Income vs Expenses. Two arcs using stroke-dasharray —
-// no chart library. Keeps bundle tiny and matches the flat-design language.
-function FinancesDonut({ totalEarned, totalSpent, net }: {
-  totalEarned: number; totalSpent: number; net: number
+// Editorial, celebratory finances card. No donut — the Net is the hero.
+// - animated count-up for Net
+// - segmented flow bar (green/red) proportional to income/expenses
+// - mini 14-day net sparkline
+// No chart libraries, tiny bundle footprint.
+function FinancesHero({
+  totalEarned, totalSpent, net, income, expenses, now,
+}: {
+  totalEarned: number
+  totalSpent: number
+  net: number
+  income: { date: string; amount: number }[]
+  expenses: { date: string; amount: number }[]
+  now: Date
 }) {
+  // Count-up animation for the Net number
+  const [displayNet, setDisplayNet] = useState(0)
+  const [barMounted, setBarMounted] = useState(false)
+  useEffect(() => {
+    const start = performance.now()
+    const duration = 900
+    const from = 0
+    const to = net
+    let raf = 0
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / duration)
+      // easeOutCubic
+      const eased = 1 - Math.pow(1 - p, 3)
+      setDisplayNet(from + (to - from) * eased)
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    // small delay so the bar animates in after mount
+    const id = window.setTimeout(() => setBarMounted(true), 30)
+    return () => { cancelAnimationFrame(raf); clearTimeout(id) }
+  }, [net])
+
   const total = totalEarned + totalSpent
-  const incomePct = total > 0 ? totalEarned / total : 0
-  const R = 54
-  const C = 2 * Math.PI * R // circumference
-  const incomeLen = C * incomePct
-  const expenseLen = C - incomeLen
+  const incomePct = total > 0 ? (totalEarned / total) * 100 : 0
+  const expensePct = total > 0 ? (totalSpent / total) * 100 : 0
+
+  // Sparkline: net per day for last 14 days
+  const days: { date: Date; net: number }[] = []
+  for (let i = 13; i >= 0; i--) {
+    const d = subDays(now, i)
+    const inc = income
+      .filter(x => isSameDay(new Date(x.date), d))
+      .reduce((s, x) => s + x.amount, 0)
+    const exp = expenses
+      .filter(x => isSameDay(new Date(x.date), d))
+      .reduce((s, x) => s + x.amount, 0)
+    days.push({ date: d, net: inc - exp })
+  }
+  const trending = days.length >= 2 && days[days.length - 1].net >= days[0].net
+  const sparkW = 180
+  const sparkH = 24
+  const values = days.map(d => d.net)
+  const minV = Math.min(...values, 0)
+  const maxV = Math.max(...values, 0)
+  const range = maxV - minV || 1
+  const sparkPoints = days
+    .map((d, i) => {
+      const x = (i / Math.max(1, days.length - 1)) * sparkW
+      const y = sparkH - ((d.net - minV) / range) * sparkH
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    })
+    .join(' ')
+
+  const daysElapsed = Math.max(1, now.getDate())
+  const perDay = Math.round(net / daysElapsed)
+  const netPositive = net >= 0
+  const displayAbs = Math.abs(Math.round(displayNet)).toLocaleString('en-IN')
 
   return (
-    <div className="bg-surface border border-line rounded-xl p-6">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-4">Finances (this month)</p>
+    <div className="bg-surface border border-line rounded-xl p-6 relative overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Finances · {format(now, 'MMMM')}</p>
+        <span className="text-[10px] text-ink-muted uppercase tracking-wider">net</span>
+      </div>
 
-      <div className="flex items-center gap-5">
-        <svg width={140} height={140} viewBox="0 0 140 140" className="shrink-0 -rotate-90">
-          {/* track */}
-          <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-line" strokeWidth={16} />
-          {total > 0 && (
-            <>
-              {/* income arc */}
-              <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-success"
-                strokeWidth={16} strokeDasharray={`${incomeLen} ${C}`} strokeDashoffset={0} />
-              {/* expenses arc — offset by income arc */}
-              <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-danger"
-                strokeWidth={16} strokeDasharray={`${expenseLen} ${C}`} strokeDashoffset={-incomeLen} />
-            </>
-          )}
-        </svg>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-success" />
-            <span className="text-[11px] text-ink-secondary flex-1">Income</span>
-            <span className="text-sm text-ink tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</span>
+      {/* Hero NET */}
+      <div
+        className="text-[clamp(2rem,4vw,3.5rem)] font-extralight tracking-tight leading-none"
+        style={{ fontVariantNumeric: 'tabular-nums' }}
+      >
+        <span className={netPositive ? 'text-success' : 'text-danger'}>
+          {netPositive ? '' : '−'}₹{displayAbs}
+        </span>
+      </div>
+
+      {/* Segmented flow bar */}
+      <div className="mt-5">
+        <div className="relative h-3 rounded-full bg-canvas overflow-hidden border border-line-light">
+          <div className="absolute inset-0 flex">
+            <div
+              className="h-full bg-gradient-to-r from-success/80 to-success transition-[width] duration-[900ms] ease-out"
+              style={{ width: barMounted ? `${incomePct}%` : '0%' }}
+            />
+            <div
+              className="h-full bg-gradient-to-r from-danger to-danger/80 transition-[width] duration-[900ms] ease-out"
+              style={{ width: barMounted ? `${expensePct}%` : '0%' }}
+            />
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <span className="w-2.5 h-2.5 rounded-sm bg-danger" />
-            <span className="text-[11px] text-ink-secondary flex-1">Expenses</span>
-            <span className="text-sm text-ink tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</span>
-          </div>
-          <div className="pt-3 border-t border-line-light">
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-0.5">Net</p>
-            <p className={`text-2xl font-light tabular-nums ${net >= 0 ? 'text-success' : 'text-danger'}`}>
-              {net >= 0 ? '+' : '-'}₹{Math.abs(net).toLocaleString('en-IN')}
-            </p>
-          </div>
+          {/* gloss */}
+          <div className="absolute inset-x-0 top-0 h-px bg-white/20 pointer-events-none" />
+        </div>
+        <div className="mt-3 flex items-center justify-between gap-4 text-[11px]">
+          <span className="flex items-center gap-1.5 text-success">
+            <TrendingUp size={12} />
+            <span className="tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</span>
+            <span className="text-ink-muted uppercase tracking-wider text-[10px]">in</span>
+          </span>
+          <span className="flex items-center gap-1.5 text-danger">
+            <TrendingDown size={12} />
+            <span className="tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</span>
+            <span className="text-ink-muted uppercase tracking-wider text-[10px]">out</span>
+          </span>
+        </div>
+      </div>
+
+      {/* Sparkline */}
+      <div className="mt-4 pt-4 border-t border-line-light">
+        <div className="flex items-end gap-3">
+          <svg width={sparkW} height={sparkH} viewBox={`0 0 ${sparkW} ${sparkH}`}
+            className="shrink-0" aria-hidden="true">
+            <polyline
+              fill="none"
+              strokeWidth={1.5}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              points={sparkPoints}
+              className={trending ? 'text-success' : 'text-danger'}
+              stroke="currentColor"
+            />
+          </svg>
+          <p className="text-[11px] text-ink-muted leading-tight">
+            ₹{Math.abs(perDay).toLocaleString('en-IN')}/day avg
+            <br />
+            <span className="text-[10px]">last 14 days</span>
+          </p>
         </div>
       </div>
     </div>

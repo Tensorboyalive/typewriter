@@ -116,7 +116,7 @@ export function Today() {
   return (
     <div className="h-full flex flex-col">
       {/* Header. pr reserves space for floating theme/music buttons top-right. */}
-      <div className="px-4 sm:px-6 py-4 pr-4 md:pr-32 border-b border-line bg-surface/50">
+      <div className="px-4 sm:px-6 py-4 pr-4 md:pr-44 border-b border-line bg-surface/50">
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-ink-muted">Today</p>

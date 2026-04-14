@@ -1,22 +1,21 @@
-// Ambient radio stations. Uses SomaFM's free public MP3 streams — they're
-// CORS-friendly for <audio>, require no API key, and stay up 24/7. If a
-// stream ever returns 404 or errors, swap in another SomaFM channel:
-//   https://somafm.com/listen/
+// Known-stable 24/7 YouTube Live lofi/focus streams, delegated via <iframe>.
+// Iframe audio sidesteps CORS/CSP issues we hit with the prior <audio> +
+// SomaFM approach.
 //
-// Each entry points at a direct MP3 icecast URL for a SomaFM channel.
+// Autoplay rule: YouTube embed autoplay only fires if the iframe mounts in
+// response to a user gesture. MusicPlayer does exactly this — toggle the
+// `playing` flag on click, then render the iframe with `autoplay=1`.
 
-export interface Station {
+export type Station = {
   id: string
   name: string
-  url: string
   vibe: string
+  embedUrl: string
 }
 
 export const STATIONS: Station[] = [
-  { id: 'groove-salad',  name: 'Groove Salad',    vibe: 'chilled beats & grooves',     url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
-  { id: 'drone-zone',    name: 'Drone Zone',      vibe: 'atmospheric ambient',         url: 'https://ice1.somafm.com/dronezone-128-mp3' },
-  { id: 'defcon',        name: 'DEF CON Radio',   vibe: 'electronic for hacking',      url: 'https://ice1.somafm.com/defcon-256-mp3' },
-  { id: 'lush',          name: 'Lush',            vibe: 'sensual vocals, downtempo',   url: 'https://ice1.somafm.com/lush-128-mp3' },
-  { id: 'deep-space',    name: 'Deep Space One',  vibe: 'deep space ambient',          url: 'https://ice1.somafm.com/deepspaceone-128-mp3' },
-  { id: 'mission',       name: 'Mission Control', vibe: 'ambient + space audio',       url: 'https://ice1.somafm.com/missioncontrol-128-mp3' },
+  { id: 'lofi',      name: 'Lofi Girl',     vibe: 'study',  embedUrl: 'https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0' },
+  { id: 'synthwave', name: 'Synthwave',     vibe: 'night',  embedUrl: 'https://www.youtube.com/embed/4xDzrJKXOOY?autoplay=1&mute=0' },
+  { id: 'chillhop',  name: 'Chillhop Jazz', vibe: 'focus',  embedUrl: 'https://www.youtube.com/embed/5yx6BWlEVcY?autoplay=1&mute=0' },
+  { id: 'bootleg',   name: 'Bootleg Boy',   vibe: 'chill',  embedUrl: 'https://www.youtube.com/embed/28KRPhVzCus?autoplay=1&mute=0' },
 ]
