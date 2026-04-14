@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { ChevronDown, Plus, Trash2, X, Pencil, Check } from 'lucide-react'
+import { ChevronDown, Plus, X, Pencil, Check } from 'lucide-react'
 import { useStore } from '../store'
 
 export function ChannelSwitcher({ canManage = true }: { canManage?: boolean }) {
-  const { channels, activeChannel, switchChannel, addChannel, deleteChannel, updateChannel } = useStore()
+  const { channels, activeChannel, switchChannel, addChannel, updateChannel } = useStore()
   const [open, setOpen] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -74,12 +74,6 @@ export function ChannelSwitcher({ canManage = true }: { canManage?: boolean }) {
                           className="p-1 text-ink-muted hover:text-blueprint transition-colors opacity-0 group-hover:opacity-100">
                           <Pencil size={11} />
                         </button>
-                        {channels.length > 1 && (
-                          <button onClick={(e) => { e.stopPropagation(); deleteChannel(ch.id) }}
-                            className="p-1 text-ink-muted hover:text-danger transition-colors">
-                            <Trash2 size={12} />
-                          </button>
-                        )}
                       </div>
                     )}
                   </>

@@ -8,9 +8,9 @@
   --color-ink-muted: #94a3b8;
   --color-line: #d0dbe6;
   --color-line-light: #e2eaf2;
-  --color-blueprint: #3b82f6;
-  --color-blueprint-light: #dbeafe;
-  --color-blueprint-dark: #2563eb;
+  --color-blueprint: #f97316;
+  --color-blueprint-light: #ffedd5;
+  --color-blueprint-dark: #ea580c;
   --color-danger: #ef4444;
   --color-danger-light: #fee2e2;
   --color-success: #10b981;
@@ -24,8 +24,8 @@ body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
   background-image:
-    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(249, 115, 22, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
   background-size: 24px 24px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

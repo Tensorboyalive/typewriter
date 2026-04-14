@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { format } from 'date-fns'
 import { supabase } from './lib/supabase'
+
+// Local-time YYYY-MM-DD. Do NOT use toISOString().split('T')[0] — that's UTC,
+// which breaks the checklist "today" filter for any user outside UTC.
+const localDateKey = (d: Date = new Date()) => format(d, 'yyyy-MM-dd')
 import type { Channel, Project, Expense, Income, TimerSession, Note, ChecklistItem, UserRole, Profile, ChecklistTemplate, EditorOutput } from './types'
 
 interface TeamMemberWithProfile {
@@ -222,7 +227,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const fetchData = useCallback(async (channelId: string, channelIds: string[]) => {
     setDataLoading(true)
     localStorage.setItem('tw-active-channel', channelId)
-    const today = new Date().toISOString().split('T')[0]
+    const today = localDateKey()
 
     const [pRes, sRes, oRes, eRes, iRes, nRes, cRes, tRes, settRes, apRes, asRes] = await Promise.all([
       // Channel-scoped
@@ -424,7 +429,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const addEditorOutput = async (o: { description: string; live_link?: string | null; date?: string }) => {
     const { data, error } = await supabase.from('editor_outputs').insert({
       description: o.description, live_link: o.live_link ?? null,
-      date: o.date ?? new Date().toISOString().split('T')[0],
+      date: o.date ?? localDateKey(),
       channel_id: activeChannelId!, user_id: user!.id,
     }).select().single()
     if (!error && data) { setEditorOutputs(prev => [data, ...prev]); return data as EditorOutput }
