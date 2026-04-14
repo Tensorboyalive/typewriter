@@ -93,7 +93,7 @@ export function Checklist() {
     )
     const existingTitles = new Set(displayItems.map(i => i.title))
     for (const proj of todayProjects) {
-      const title = `${proj.title} — ${proj.type}`
+      const title = proj.format ? `${proj.title} — ${proj.format}` : proj.title
       if (existingTitles.has(title)) continue
       await addChecklistItem({ title, category: 'content', date: dateStr })
     }

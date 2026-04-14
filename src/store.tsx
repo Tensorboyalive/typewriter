@@ -332,14 +332,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     })
   }
 
-  const addProject = async (p: { title: string; type: string; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }) => {
+  const addProject = async (p: { title: string; type?: string | null; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }) => {
     const { data, error } = await supabase.from('projects').insert({
-      title: p.title, type: p.type, status: p.status, platform: p.platform ?? 'tb',
+      title: p.title, type: p.type ?? null, status: p.status, platform: p.platform ?? 'tb',
       scheduled_date: p.scheduled_date ?? null, script: p.script ?? '', description: p.description ?? '',
       format: p.format ?? null,
       channel_id: activeChannelId!, user_id: user!.id,
     }).select().single()
-    if (!error && data) {
+    if (error) {
+      console.error('[store] addProject failed:', error.message, error)
+      return null
+    }
+    if (data) {
       setProjects(prev => [data, ...prev])
       setAllProjects(prev => [data, ...prev])
       return data as Project

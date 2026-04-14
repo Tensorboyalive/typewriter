@@ -53,7 +53,7 @@ export interface Project {
   channel_id: string
   user_id: string
   title: string
-  type: ContentType
+  type?: ContentType | null
   status: ProjectStatus
   platform: Platform
   scheduled_date: string | null

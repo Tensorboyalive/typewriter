@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Music, Play, Pause, X, ChevronRight } from 'lucide-react'
-import { STATIONS, type Station } from '../lib/stations'
+import { Music, Play, Pause, X, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
+import { STATIONS, stationEmbedUrl, type Station } from '../lib/stations'
 
 // Iframe delegation: a plain <iframe> pointed at a YouTube Live embed URL.
 // The iframe owns its origin's CORS/CSP, which is why this architecture
@@ -46,6 +46,7 @@ export function MusicPlayer() {
   const [stationId, setStationId] = useState(stored.stationId)
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showVideo, setShowVideo] = useState(false)
   // iframe key — bumped whenever we want to force remount (station change while playing)
   const [iframeKey, setIframeKey] = useState(0)
 
@@ -84,15 +85,17 @@ export function MusicPlayer() {
 
   return (
     <>
-      {/* Hidden offscreen iframe — this is the audio source */}
-      {playing && (
+      {/* Iframe — audio source. Hidden offscreen by default; visible when expanded. */}
+      {playing && !showVideo && (
         <iframe
           key={iframeKey}
           title={`music-${station.id}`}
-          src={station.embedUrl}
-          allow="autoplay"
+          src={stationEmbedUrl(station.videoId)}
+          allow="autoplay; encrypted-media; picture-in-picture"
+          referrerPolicy="strict-origin-when-cross-origin"
+          allowFullScreen
           onError={() => { setError('Stream paused. Try another station.'); setPlaying(false) }}
-          style={{ position: 'fixed', left: '-9999px', width: 200, height: 120, border: 0 }}
+          style={{ position: 'fixed', left: '-9999px', top: 0, width: 320, height: 180, border: 0 }}
         />
       )}
 
@@ -131,14 +134,36 @@ export function MusicPlayer() {
             <p className="text-sm font-medium text-ink truncate">{station.name}</p>
             <p className="text-[11px] text-ink-muted truncate">{station.vibe}</p>
 
+            {/* Visible video mode — inline iframe when expanded */}
+            {playing && showVideo && (
+              <div className="mt-3 rounded-lg overflow-hidden border border-line bg-black">
+                <iframe
+                  key={iframeKey}
+                  title={`music-video-${station.id}`}
+                  src={stationEmbedUrl(station.videoId)}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  style={{ width: '100%', height: 144, border: 0, display: 'block' }}
+                />
+              </div>
+            )}
+
             <div className="mt-3 flex items-center gap-2">
               <button onClick={toggle}
                 title="Toggle (shortcut: M)"
                 className="p-2 rounded-full bg-blueprint text-white hover:bg-blueprint-dark transition-colors">
                 {playing ? <Pause size={16} /> : <Play size={16} />}
               </button>
+              <button
+                onClick={() => setShowVideo(v => !v)}
+                title={showVideo ? 'Hide video' : 'Show video'}
+                className="p-2 rounded-full border border-line text-ink-secondary hover:text-ink hover:border-ink-muted transition-colors"
+              >
+                {showVideo ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+              </button>
               <p className="text-[10px] text-ink-muted flex-1">
-                Use OS/tab volume. Press <kbd className="px-1 py-0.5 border border-line rounded text-[9px]">M</kbd> to toggle.
+                <kbd className="px-1 py-0.5 border border-line rounded text-[9px]">M</kbd> toggles
               </p>
             </div>
 

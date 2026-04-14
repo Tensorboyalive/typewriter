@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3 } from 'lucide-react'
 import { useStore } from '../store'
-import { STATUSES, CONTENT_TYPES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat } from '../types'
+import { STATUSES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat } from '../types'
 
 type ViewMode = 'list' | 'board'
 
@@ -28,7 +28,6 @@ export function Kanban() {
       ?? 'tb'
     const project = await addProject({
       title: newTitle.trim(),
-      type: 'reel',
       platform: defaultPlatform,
       status: 'idea',
       format: newFormat,
@@ -55,7 +54,6 @@ export function Kanban() {
   }
 
   const renderProjectCard = (project: typeof projects[0], compact = false) => {
-    const typeInfo = CONTENT_TYPES.find(t => t.id === project.type)
     const platInfo = PLATFORMS.find(p => p.id === project.platform)
 
     if (compact) {
@@ -68,12 +66,6 @@ export function Kanban() {
           <p className="text-[12px] text-ink font-medium truncate mb-1.5">{project.title}</p>
           <div className="flex items-center gap-1.5 flex-wrap">
             {renderFormatTag(project.format)}
-            <span
-              className="text-[9px] px-1.5 py-0.5 rounded font-medium"
-              style={{ backgroundColor: typeInfo?.color + '18', color: typeInfo?.color }}
-            >
-              {typeInfo?.label}
-            </span>
             {platInfo && (
               <span
                 className="text-[9px] px-1.5 py-0.5 rounded font-medium"
@@ -105,12 +97,6 @@ export function Kanban() {
         <p className="flex-1 text-sm text-ink font-medium truncate">{project.title}</p>
         <div className="flex items-center gap-2 shrink-0">
           {renderFormatTag(project.format, 'md')}
-          <span
-            className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-            style={{ backgroundColor: typeInfo?.color + '18', color: typeInfo?.color }}
-          >
-            {typeInfo?.label}
-          </span>
           {platInfo && (
             <span
               className="text-[10px] px-1.5 py-0.5 rounded font-medium"

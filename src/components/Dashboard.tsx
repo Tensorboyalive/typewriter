@@ -15,7 +15,7 @@ import {
 import { Plus, ArrowRight, CheckSquare, BookOpen, CalendarClock, TrendingUp, TrendingDown } from 'lucide-react'
 import { useStore } from '../store'
 import { AdminLock } from './AdminLock'
-import { STATUSES, CONTENT_TYPES } from '../types'
+import { STATUSES, CONTENT_FORMATS } from '../types'
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -205,18 +205,17 @@ export function Dashboard() {
           ) : (
             <div className="space-y-2">
               {upcoming.map(p => {
-                const typeInfo = CONTENT_TYPES.find(t => t.id === p.type)
+                const fmtInfo = CONTENT_FORMATS.find(f => f.id === p.format)
                 const ch = channels.find(c => c.id === p.channel_id)
                 const isOverdue = new Date(p.deadline!) < now
                 return (
                   <button key={p.id} onClick={() => { if (ch) switchChannel(ch.id); navigate(`/projects/${p.id}`) }}
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md border border-line hover:border-blueprint transition-all text-left">
-                    <span
-                      className="text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0"
-                      style={{ backgroundColor: typeInfo?.color + '18', color: typeInfo?.color }}
-                    >
-                      {typeInfo?.label}
-                    </span>
+                    {fmtInfo && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-medium shrink-0 bg-blueprint-light text-blueprint border border-blueprint/20">
+                        {fmtInfo.label}
+                      </span>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-ink truncate">{p.title}</p>
                       {ch && <p className="text-[10px] text-ink-muted">{ch.name}</p>}
@@ -297,7 +296,7 @@ export function Dashboard() {
           </div>
           <div className="grid grid-cols-3 gap-3">
             {allProjects.slice(0, 6).map(p => {
-              const t = CONTENT_TYPES.find(ct => ct.id === p.type)
+              const fmtInfo = CONTENT_FORMATS.find(f => f.id === p.format)
               const status = STATUSES.find(s => s.id === p.status)
               const ch = channels.find(c => c.id === p.channel_id)
               return (
@@ -305,10 +304,11 @@ export function Dashboard() {
                   className="text-left p-3 rounded-md border border-line hover:border-blueprint hover:shadow-sm transition-all group">
                   <p className="text-sm text-ink font-medium truncate group-hover:text-blueprint transition-colors">{p.title}</p>
                   <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[9px] px-1.5 py-0.5 rounded font-medium"
-                      style={{ backgroundColor: t?.color + '18', color: t?.color }}>
-                      {t?.label}
-                    </span>
+                    {fmtInfo && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded font-medium bg-blueprint-light text-blueprint border border-blueprint/20">
+                        {fmtInfo.label}
+                      </span>
+                    )}
                     <span className="text-[9px] text-ink-muted uppercase tracking-wider">{status?.label}</span>
                   </div>
                   {ch && <p className="text-[9px] text-ink-muted mt-1">{ch.name}</p>}

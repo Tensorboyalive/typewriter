@@ -15,7 +15,7 @@ import {
 } from 'date-fns'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useStore } from '../store'
-import { CONTENT_TYPES, type ContentType } from '../types'
+import { CONTENT_FORMATS, type ContentFormat } from '../types'
 import { Select } from './Select'
 
 export function Calendar() {
@@ -24,7 +24,7 @@ export function Calendar() {
   const [current, setCurrent] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [newTitle, setNewTitle] = useState('')
-  const [newType, setNewType] = useState<ContentType>('reel')
+  const [newFormat, setNewFormat] = useState<ContentFormat>('reel')
 
   const monthStart = startOfMonth(current)
   const monthEnd = endOfMonth(current)
@@ -40,7 +40,7 @@ export function Calendar() {
     if (!newTitle.trim() || !selectedDate) return
     addProject({
       title: newTitle.trim(),
-      type: newType,
+      format: newFormat,
       status: 'idea',
       scheduled_date: format(selectedDate, 'yyyy-MM-dd'),
       script: '',
@@ -118,23 +118,19 @@ export function Calendar() {
                 {format(day, 'd')}
               </span>
               <div className="mt-1 space-y-1">
-                {dayProjects.map(p => {
-                  const t = CONTENT_TYPES.find(ct => ct.id === p.type)
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={e => {
-                        e.stopPropagation()
-                        navigate(`/projects/${p.id}`)
-                      }}
-                      className="block w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all"
-                      style={{ backgroundColor: t?.color + '18', color: t?.color }}
-                      title={p.title}
-                    >
-                      {p.title}
-                    </button>
-                  )
-                })}
+                {dayProjects.map(p => (
+                  <button
+                    key={p.id}
+                    onClick={e => {
+                      e.stopPropagation()
+                      navigate(`/projects/${p.id}`)
+                    }}
+                    className="block w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all bg-blueprint-light text-blueprint"
+                    title={p.title}
+                  >
+                    {p.title}
+                  </button>
+                ))}
               </div>
             </div>
           )
@@ -165,9 +161,9 @@ export function Calendar() {
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
             />
             <Select
-              value={newType}
-              onChange={val => setNewType(val as ContentType)}
-              options={CONTENT_TYPES.map(t => ({ value: t.id, label: t.label, color: t.color }))}
+              value={newFormat}
+              onChange={val => setNewFormat(val as ContentFormat)}
+              options={CONTENT_FORMATS.map(f => ({ value: f.id, label: f.label }))}
             />
             <button
               onClick={handleAdd}
@@ -183,20 +179,17 @@ export function Calendar() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">
                 On this day — click to open
               </p>
-              {getProjectsForDay(selectedDate).map(p => {
-                const t = CONTENT_TYPES.find(ct => ct.id === p.type)
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => navigate(`/projects/${p.id}`)}
-                    className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
-                  >
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: t?.color }} />
-                    <span className="flex-1 truncate">{p.title}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{p.status}</span>
-                  </button>
-                )
-              })}
+              {getProjectsForDay(selectedDate).map(p => (
+                <button
+                  key={p.id}
+                  onClick={() => navigate(`/projects/${p.id}`)}
+                  className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
+                >
+                  <span className="w-2 h-2 rounded-full shrink-0 bg-blueprint" />
+                  <span className="flex-1 truncate">{p.title}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{p.status}</span>
+                </button>
+              ))}
             </div>
           )}
 

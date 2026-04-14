@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Trash2, CalendarClock, Radio } from 'lucide-react'
 import { useStore } from '../store'
-import { CONTENT_TYPES, CONTENT_FORMATS, STATUSES, type ProjectStatus, type ContentFormat } from '../types'
+import { CONTENT_FORMATS, STATUSES, type ProjectStatus, type ContentFormat } from '../types'
 import { Select } from './Select'
 import { Timer } from './Timer'
 
@@ -24,8 +24,6 @@ export function ScriptEditor() {
       </div>
     )
   }
-
-  const typeInfo = CONTENT_TYPES.find(t => t.id === project.type)
 
   const handleChannelChange = async (newChannelId: string) => {
     if (newChannelId === project.channel_id) return
@@ -58,15 +56,6 @@ export function ScriptEditor() {
               placeholder="Project title..."
             />
             <div className="flex items-center gap-3 mt-1 flex-wrap">
-              <span
-                className="text-[10px] px-1.5 py-0.5 rounded font-medium"
-                style={{
-                  backgroundColor: typeInfo?.color + '18',
-                  color: typeInfo?.color,
-                }}
-              >
-                {typeInfo?.label}
-              </span>
               <Select
                 value={project.status}
                 onChange={val =>

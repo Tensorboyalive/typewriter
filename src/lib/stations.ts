@@ -1,21 +1,17 @@
-// Known-stable 24/7 YouTube Live lofi/focus streams, delegated via <iframe>.
-// Iframe audio sidesteps CORS/CSP issues we hit with the prior <audio> +
-// SomaFM approach.
-//
-// Autoplay rule: YouTube embed autoplay only fires if the iframe mounts in
-// response to a user gesture. MusicPlayer does exactly this — toggle the
-// `playing` flag on click, then render the iframe with `autoplay=1`.
+// Known-stable 24/7 YouTube Live streams delegated via <iframe>.
+// Using youtube-nocookie.com — fewer tracking cookies, less aggressive CSP.
+// Autoplay rule: iframe must mount in response to a user gesture (see MusicPlayer).
 
-export type Station = {
-  id: string
-  name: string
-  vibe: string
-  embedUrl: string
-}
+export type Station = { id: string; name: string; vibe: string; videoId: string }
 
 export const STATIONS: Station[] = [
-  { id: 'lofi',      name: 'Lofi Girl',     vibe: 'study',  embedUrl: 'https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=1&mute=0' },
-  { id: 'synthwave', name: 'Synthwave',     vibe: 'night',  embedUrl: 'https://www.youtube.com/embed/4xDzrJKXOOY?autoplay=1&mute=0' },
-  { id: 'chillhop',  name: 'Chillhop Jazz', vibe: 'focus',  embedUrl: 'https://www.youtube.com/embed/5yx6BWlEVcY?autoplay=1&mute=0' },
-  { id: 'bootleg',   name: 'Bootleg Boy',   vibe: 'chill',  embedUrl: 'https://www.youtube.com/embed/28KRPhVzCus?autoplay=1&mute=0' },
+  { id: 'lofi',     name: 'Lofi Girl',     vibe: 'study',  videoId: 'jfKfPfyJRdk' },
+  { id: 'synth',    name: 'Synthwave',     vibe: 'night',  videoId: '4xDzrJKXOOY' },
+  { id: 'coffee',   name: 'Coffee Shop',   vibe: 'cozy',   videoId: 'h2zkV-l_TbQ' },
+  { id: 'rain',     name: 'Rain Ambience', vibe: 'sleep',  videoId: 'mPZkdNFkNps' },
+  { id: 'ocean',    name: 'Ocean Waves',   vibe: 'reset',  videoId: 'V1bFr2SWP1I' },
+  { id: 'chillhop', name: 'Chillhop Jazz', vibe: 'focus',  videoId: '5yx6BWlEVcY' },
 ]
+
+export const stationEmbedUrl = (videoId: string) =>
+  `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`
