@@ -8,7 +8,7 @@ import { STATUSES, CONTENT_TYPES, PLATFORMS, type ContentType, type Platform } f
 type ViewMode = 'list' | 'board'
 
 export function Kanban() {
-  const { projects, addProject, updateProject, teamMembers, effectiveRole } = useStore()
+  const { projects, addProject, updateProject, teamMembers } = useStore()
   const navigate = useNavigate()
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
@@ -19,7 +19,7 @@ export function Kanban() {
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [platformFilter, setPlatformFilter] = useState<Platform | 'all'>('all')
 
-  const canAssign = effectiveRole === 'admin' || effectiveRole === 'pa'
+  const canAssign = true
 
   const toggleGroup = (id: string) =>
     setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))

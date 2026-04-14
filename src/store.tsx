@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
-import type { Channel, Project, Expense, Income, TimerSession, Note, ContentBankItem, ChecklistItem, UserRole, Profile, Deal, ChecklistTemplate, EditorOutput } from './types'
+import type { Channel, Project, Expense, Income, TimerSession, Note, ChecklistItem, UserRole, Profile, ChecklistTemplate, EditorOutput } from './types'
 
 interface TeamMemberWithProfile {
   id: string
@@ -15,9 +15,6 @@ interface TeamMemberWithProfile {
 interface StoreContextType {
   user: User | null
   userRole: UserRole
-  effectiveRole: UserRole
-  viewAs: UserRole | 'self'
-  setViewAs: (role: UserRole | 'self') => void
   profile: Profile | null
   authLoading: boolean
   signIn: (email: string) => Promise<{ error: string | null }>
@@ -34,10 +31,22 @@ interface StoreContextType {
   inviteTeamMember: (email: string, role: UserRole, allChannels?: boolean) => Promise<{ error: string | null }>
   refreshTeamMembers: () => Promise<void>
 
+  // Channel-scoped (active channel only)
   projects: Project[]
+  sessions: TimerSession[]
+  editorOutputs: EditorOutput[]
+
+  // Cross-channel aggregate (for unified Dashboard)
+  allProjects: Project[]
+  allSessions: TimerSession[]
+
+  // User-scoped (same across all channels)
   expenses: Expense[]
   income: Income[]
-  sessions: TimerSession[]
+  notes: Note[]
+  checklistItems: ChecklistItem[]
+  checklistTemplates: ChecklistTemplate[]
+
   conversionRate: number
   dataLoading: boolean
 
@@ -53,33 +62,19 @@ interface StoreContextType {
 
   addSession: (s: { duration: number; completed_at: string }) => Promise<void>
 
-  notes: Note[]
   addNote: (n: { title: string; content: string; label: string }) => Promise<Note | null>
   updateNote: (id: string, updates: Partial<Note>) => Promise<void>
   deleteNote: (id: string) => Promise<void>
 
-  bankItems: ContentBankItem[]
-  addBankItem: (item: { platform: string; content_text: string; scheduled_date?: string | null }) => Promise<ContentBankItem | null>
-  updateBankItem: (id: string, updates: Partial<ContentBankItem>) => Promise<void>
-  deleteBankItem: (id: string) => Promise<void>
-
-  checklistItems: ChecklistItem[]
   addChecklistItem: (item: { title: string; category: string; date: string; is_recurring?: boolean }) => Promise<ChecklistItem | null>
   updateChecklistItem: (id: string, updates: Partial<ChecklistItem>) => Promise<void>
   deleteChecklistItem: (id: string) => Promise<void>
 
-  deals: Deal[]
-  addDeal: (d: { company: string; contact_name: string; contact_email?: string | null; source: string; stage?: string; value_amount: number; value_currency?: 'INR' | 'USD'; deliverables?: string | null; deadline?: string | null; notes?: string | null }) => Promise<Deal | null>
-  updateDeal: (id: string, updates: Partial<Deal>) => Promise<void>
-  deleteDeal: (id: string) => Promise<void>
-
-  checklistTemplates: ChecklistTemplate[]
   addChecklistTemplate: (t: { title: string; category: string; sort_order?: number }) => Promise<ChecklistTemplate | null>
   updateChecklistTemplate: (id: string, updates: Partial<ChecklistTemplate>) => Promise<void>
   deleteChecklistTemplate: (id: string) => Promise<void>
   applyDailyTemplate: (date: string) => Promise<number>
 
-  editorOutputs: EditorOutput[]
   addEditorOutput: (o: { description: string; live_link?: string | null; date?: string }) => Promise<EditorOutput | null>
   updateEditorOutput: (id: string, updates: Partial<EditorOutput>) => Promise<void>
   deleteEditorOutput: (id: string) => Promise<void>
@@ -94,28 +89,28 @@ const StoreContext = createContext<StoreContextType>(null!)
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
-  const [userRole, setUserRole] = useState<UserRole>('editor')
-  const [viewAs, setViewAs] = useState<UserRole | 'self'>('self')
+  const [userRole, setUserRole] = useState<UserRole>('admin')
   const [profile, setProfile] = useState<Profile | null>(null)
-
-  const effectiveRole: UserRole = viewAs === 'self' ? userRole : viewAs
 
   const [channels, setChannels] = useState<Channel[]>([])
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null)
 
   const [projects, setProjects] = useState<Project[]>([])
+  const [sessions, setSessions] = useState<TimerSession[]>([])
+  const [editorOutputs, setEditorOutputs] = useState<EditorOutput[]>([])
+
+  const [allProjects, setAllProjects] = useState<Project[]>([])
+  const [allSessions, setAllSessions] = useState<TimerSession[]>([])
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [income, setIncome] = useState<Income[]>([])
-  const [sessions, setSessions] = useState<TimerSession[]>([])
   const [notes, setNotes] = useState<Note[]>([])
-  const [bankItems, setBankItems] = useState<ContentBankItem[]>([])
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
+  const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([])
+
   const [conversionRate, setConversionRateState] = useState(84)
   const [dataLoading, setDataLoading] = useState(true)
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithProfile[]>([])
-  const [deals, setDeals] = useState<Deal[]>([])
-  const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([])
-  const [editorOutputs, setEditorOutputs] = useState<EditorOutput[]>([])
 
   const activeChannel = channels.find(c => c.id === activeChannelId) ?? null
 
@@ -133,18 +128,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) {
       setChannels([]); setActiveChannelId(null); setDataLoading(false)
-      setProfile(null); setUserRole('editor')
+      setProfile(null); setUserRole('admin')
       return
     }
     (async () => {
-      // Fetch profile + role
       const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       if (profileData) {
         setProfile(profileData as Profile)
         setUserRole((profileData.role as UserRole) || 'admin')
       }
 
-      // Fetch channels the user owns OR is a team member of
       const [ownedRes, memberRes] = await Promise.all([
         supabase.from('channels').select('*').eq('user_id', user.id).order('created_at'),
         supabase.from('team_members').select('channel_id, channels(*)').eq('user_id', user.id),
@@ -196,7 +189,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const inviteTeamMember = async (email: string, role: UserRole, allChannels = false): Promise<{ error: string | null }> => {
     if (!activeChannelId || !user) return { error: 'No active channel' }
-    // Use SECURITY DEFINER RPC to bypass RLS for cross-user email lookup
     const { data: foundId, error: rpcError } = await supabase
       .rpc('lookup_user_by_email', { lookup_email: email })
     if (rpcError || !foundId) {
@@ -204,7 +196,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     const targetUserId = foundId as string
 
-    // Determine which channels to add to
     const targetChannels = allChannels
       ? channels.filter(c => c.user_id === user.id).map(c => c.id)
       : [activeChannelId]
@@ -218,7 +209,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         invited_by: user.id,
       })
       if (error) {
-        if (error.code !== '23505') errors.push(error.message) // skip "already a member"
+        if (error.code !== '23505') errors.push(error.message)
       }
     }
     if (errors.length > 0) return { error: errors.join('; ') }
@@ -226,42 +217,44 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return { error: null }
   }
 
-  // Saved, Expenses, Income, Checklist, Content Bank = user-scoped (cross-channel)
-  // Projects, Sessions = channel-scoped
+  // Channel-scoped fetch: projects, sessions, editor_outputs tied to activeChannelId
+  // User-scoped fetch: expenses, income, notes, checklist, templates — unified across channels
   const fetchData = useCallback(async (channelId: string) => {
     setDataLoading(true)
     localStorage.setItem('tw-active-channel', channelId)
     const today = new Date().toISOString().split('T')[0]
 
-    const [pRes, eRes, iRes, sRes, nRes, bRes, cRes, settRes, dRes, tRes, oRes] = await Promise.all([
+    const [pRes, sRes, oRes, eRes, iRes, nRes, cRes, tRes, settRes, apRes, asRes] = await Promise.all([
+      // Channel-scoped
       supabase.from('projects').select('*').eq('channel_id', channelId).is('archived_at', null).order('created_at', { ascending: false }),
+      supabase.from('timer_sessions').select('*').eq('channel_id', channelId).is('archived_at', null).order('completed_at', { ascending: false }),
+      supabase.from('editor_outputs').select('*').eq('channel_id', channelId).order('date', { ascending: false }).limit(50),
+      // User-scoped (unified)
       supabase.from('expenses').select('*').eq('user_id', user!.id).is('archived_at', null).order('date', { ascending: false }),
       supabase.from('income').select('*').eq('user_id', user!.id).is('archived_at', null).order('date', { ascending: false }),
-      supabase.from('timer_sessions').select('*').eq('channel_id', channelId).is('archived_at', null).order('completed_at', { ascending: false }),
       supabase.from('notes').select('*').eq('user_id', user!.id).is('archived_at', null).order('updated_at', { ascending: false }),
-      supabase.from('content_bank').select('*').eq('user_id', user!.id).is('archived_at', null).order('created_at', { ascending: false }),
       supabase.from('checklist_items').select('*').eq('user_id', user!.id).eq('date', today).is('archived_at', null).order('created_at'),
-      supabase.from('user_settings').select('*').eq('user_id', user!.id).single(),
-      supabase.from('deals').select('*').eq('channel_id', channelId).order('created_at', { ascending: false }),
       supabase.from('checklist_templates').select('*').eq('user_id', user!.id).order('sort_order'),
-      supabase.from('editor_outputs').select('*').eq('channel_id', channelId).order('date', { ascending: false }).limit(50),
+      supabase.from('user_settings').select('*').eq('user_id', user!.id).single(),
+      // Cross-channel aggregate for Dashboard
+      supabase.from('projects').select('*').eq('user_id', user!.id).is('archived_at', null).order('created_at', { ascending: false }),
+      supabase.from('timer_sessions').select('*').eq('user_id', user!.id).is('archived_at', null).order('completed_at', { ascending: false }),
     ])
 
     setProjects(pRes.data ?? [])
+    setSessions(sRes.data ?? [])
+    setEditorOutputs(oRes.data ?? [])
     setExpenses(eRes.data ?? [])
     setIncome(iRes.data ?? [])
-    setSessions(sRes.data ?? [])
     setNotes(nRes.data ?? [])
-    setBankItems(bRes.data ?? [])
     setChecklistItems(cRes.data ?? [])
-    setConversionRateState(settRes.data?.conversion_rate ?? 84)
-    setDeals(dRes.data ?? [])
     setChecklistTemplates(tRes.data ?? [])
-    setEditorOutputs(oRes.data ?? [])
+    setConversionRateState(settRes.data?.conversion_rate ?? 84)
+    setAllProjects(apRes.data ?? [])
+    setAllSessions(asRes.data ?? [])
     setDataLoading(false)
   }, [user])
 
-  // Fetch team members when channel changes
   useEffect(() => {
     if (activeChannelId && user) refreshTeamMembers()
   }, [activeChannelId, user, refreshTeamMembers])
@@ -279,7 +272,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut()
     setUser(null); setChannels([]); setActiveChannelId(null)
     setProjects([]); setExpenses([]); setIncome([]); setSessions([])
-    setBankItems([]); setChecklistItems([])
+    setChecklistItems([]); setAllProjects([]); setAllSessions([])
   }
 
   const switchChannel = (id: string) => setActiveChannelId(id)
@@ -311,18 +304,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       scheduled_date: p.scheduled_date ?? null, script: p.script ?? '', description: p.description ?? '',
       channel_id: activeChannelId!, user_id: user!.id,
     }).select().single()
-    if (!error && data) { setProjects(prev => [data, ...prev]); return data as Project }
+    if (!error && data) {
+      setProjects(prev => [data, ...prev])
+      setAllProjects(prev => [data, ...prev])
+      return data as Project
+    }
     return null
   }
 
   const updateProject = async (id: string, updates: Partial<Project>) => {
     const { error } = await supabase.from('projects').update(updates).eq('id', id)
-    if (!error) setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
+    if (!error) {
+      setProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
+      setAllProjects(prev => prev.map(p => (p.id === id ? { ...p, ...updates } : p)))
+    }
   }
 
   const deleteProject = async (id: string) => {
     await supabase.from('projects').update({ archived_at: new Date().toISOString() }).eq('id', id)
     setProjects(prev => prev.filter(p => p.id !== id))
+    setAllProjects(prev => prev.filter(p => p.id !== id))
   }
 
   const addExpense = async (e: { project_id?: string | null; description: string; amount: number; category: string; date: string }) => {
@@ -347,7 +348,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addSession = async (s: { duration: number; completed_at: string }) => {
     const { data, error } = await supabase.from('timer_sessions').insert({ ...s, channel_id: activeChannelId!, user_id: user!.id }).select().single()
-    if (!error && data) setSessions(prev => [data, ...prev])
+    if (!error && data) {
+      setSessions(prev => [data, ...prev])
+      setAllSessions(prev => [data, ...prev])
+    }
   }
 
   const addNote = async (n: { title: string; content: string; label: string }) => {
@@ -364,22 +368,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const deleteNote = async (id: string) => {
     await supabase.from('notes').update({ archived_at: new Date().toISOString() }).eq('id', id)
     setNotes(prev => prev.filter(n => n.id !== id))
-  }
-
-  const addBankItem = async (item: { platform: string; content_text: string; scheduled_date?: string | null }) => {
-    const { data, error } = await supabase.from('content_bank').insert({ ...item, user_id: user!.id }).select().single()
-    if (!error && data) { setBankItems(prev => [data, ...prev]); return data as ContentBankItem }
-    return null
-  }
-
-  const updateBankItem = async (id: string, updates: Partial<ContentBankItem>) => {
-    const { error } = await supabase.from('content_bank').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id)
-    if (!error) setBankItems(prev => prev.map(b => (b.id === id ? { ...b, ...updates, updated_at: new Date().toISOString() } : b)))
-  }
-
-  const deleteBankItem = async (id: string) => {
-    await supabase.from('content_bank').update({ archived_at: new Date().toISOString() }).eq('id', id)
-    setBankItems(prev => prev.filter(b => b.id !== id))
   }
 
   const addChecklistItem = async (item: { title: string; category: string; date: string; is_recurring?: boolean }) => {
@@ -400,26 +388,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setChecklistItems(prev => prev.filter(c => c.id !== id))
   }
 
-  // ─── Deals CRUD ──────────────────────────────────────────
-  const addDeal = async (d: { company: string; contact_name: string; contact_email?: string | null; source: string; stage?: string; value_amount: number; value_currency?: 'INR' | 'USD'; deliverables?: string | null; deadline?: string | null; notes?: string | null }) => {
-    const { data, error } = await supabase.from('deals').insert({
-      ...d, channel_id: activeChannelId!, user_id: user!.id, stage: d.stage ?? 'lead', value_currency: d.value_currency ?? 'INR',
-    }).select().single()
-    if (!error && data) { setDeals(prev => [data, ...prev]); return data as Deal }
-    return null
-  }
-
-  const updateDeal = async (id: string, updates: Partial<Deal>) => {
-    const { error } = await supabase.from('deals').update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id)
-    if (!error) setDeals(prev => prev.map(d => (d.id === id ? { ...d, ...updates, updated_at: new Date().toISOString() } : d)))
-  }
-
-  const deleteDeal = async (id: string) => {
-    await supabase.from('deals').delete().eq('id', id)
-    setDeals(prev => prev.filter(d => d.id !== id))
-  }
-
-  // ─── Checklist Templates CRUD ───────────────────────────
   const addChecklistTemplate = async (t: { title: string; category: string; sort_order?: number }) => {
     const { data, error } = await supabase.from('checklist_templates').insert({
       ...t, user_id: user!.id, sort_order: t.sort_order ?? checklistTemplates.length,
@@ -450,7 +418,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return added
   }
 
-  // ─── Editor Outputs CRUD ────────────────────────────────
   const addEditorOutput = async (o: { description: string; live_link?: string | null; date?: string }) => {
     const { data, error } = await supabase.from('editor_outputs').insert({
       description: o.description, live_link: o.live_link ?? null,
@@ -491,35 +458,35 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ])
       allChannels[ch.name] = { channel: ch, projects: p.data ?? [], sessions: s.data ?? [] }
     }
-    const [e, i, n, b, cl] = await Promise.all([
+    const [e, i, n, cl] = await Promise.all([
       supabase.from('expenses').select('*').eq('user_id', user!.id).is('archived_at', null),
       supabase.from('income').select('*').eq('user_id', user!.id).is('archived_at', null),
       supabase.from('notes').select('*').eq('user_id', user!.id).is('archived_at', null),
-      supabase.from('content_bank').select('*').eq('user_id', user!.id).is('archived_at', null),
       supabase.from('checklist_items').select('*').eq('user_id', user!.id).is('archived_at', null),
     ])
     return {
       exported_at: new Date().toISOString(), channels: allChannels,
       expenses: e.data ?? [], income: i.data ?? [], notes: n.data ?? [],
-      content_bank: b.data ?? [], checklist: cl.data ?? [],
+      checklist: cl.data ?? [],
       settings: { conversion_rate: conversionRate },
     }
   }
 
   return (
     <StoreContext.Provider value={{
-      user, userRole, effectiveRole, viewAs, setViewAs, profile, authLoading, signIn, signOut,
+      user, userRole, profile, authLoading, signIn, signOut,
       channels, activeChannel, switchChannel, addChannel, updateChannel, deleteChannel,
       teamMembers, inviteTeamMember, refreshTeamMembers,
-      projects, expenses, income, sessions, notes, conversionRate, dataLoading,
+      projects, sessions, editorOutputs,
+      allProjects, allSessions,
+      expenses, income, notes, checklistItems, checklistTemplates,
+      conversionRate, dataLoading,
       addProject, updateProject, deleteProject,
       addExpense, deleteExpense, addIncome, deleteIncome, addSession,
       addNote, updateNote, deleteNote,
-      bankItems, addBankItem, updateBankItem, deleteBankItem,
-      checklistItems, addChecklistItem, updateChecklistItem, deleteChecklistItem,
-      deals, addDeal, updateDeal, deleteDeal,
-      checklistTemplates, addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate, applyDailyTemplate,
-      editorOutputs, addEditorOutput, updateEditorOutput, deleteEditorOutput, fetchEditorOutputs,
+      addChecklistItem, updateChecklistItem, deleteChecklistItem,
+      addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate, applyDailyTemplate,
+      addEditorOutput, updateEditorOutput, deleteEditorOutput, fetchEditorOutputs,
       setConversionRate, exportAllData,
     }}>
       {children}

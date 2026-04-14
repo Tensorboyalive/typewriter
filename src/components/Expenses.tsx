@@ -398,7 +398,6 @@ export function Expenses() {
                   <td className="p-3">
                     <button
                       onClick={() => {
-                        if (!confirm('Delete this entry?')) return
                         entry.kind === 'expense'
                           ? deleteExpense(entry.id)
                           : deleteIncome(entry.id)

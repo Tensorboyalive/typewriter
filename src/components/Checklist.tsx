@@ -76,7 +76,6 @@ export function Checklist() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this checklist item?')) return
     if (isToday) {
       await deleteChecklistItem(id)
     } else {

@@ -75,7 +75,7 @@ export function ChannelSwitcher({ canManage = true }: { canManage?: boolean }) {
                           <Pencil size={11} />
                         </button>
                         {channels.length > 1 && (
-                          <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete this channel? Projects in it will be lost.')) deleteChannel(ch.id) }}
+                          <button onClick={(e) => { e.stopPropagation(); deleteChannel(ch.id) }}
                             className="p-1 text-ink-muted hover:text-danger transition-colors">
                             <Trash2 size={12} />
                           </button>

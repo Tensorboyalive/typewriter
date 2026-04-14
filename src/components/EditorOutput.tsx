@@ -32,7 +32,6 @@ export function EditorOutput() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this output entry?')) return
     await deleteEditorOutput(id)
   }
 

@@ -9,13 +9,9 @@ import { Kanban } from './components/Kanban'
 import { ScriptEditor } from './components/ScriptEditor'
 import { Expenses } from './components/Expenses'
 import { Saved } from './components/Saved'
-import { ContentBank } from './components/ContentBank'
-import { BankItemEditor } from './components/BankItemEditor'
 import { NoteEditor } from './components/NoteEditor'
 import { Checklist } from './components/Checklist'
-import { EditorQueue } from './components/EditorQueue'
 import { EditorOutput } from './components/EditorOutput'
-import { Deals } from './components/Deals'
 import { Settings } from './components/Settings'
 
 function AppContent() {
@@ -51,12 +47,8 @@ function AppContent() {
           <Route path="/expenses" element={<Expenses />} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/saved/:id" element={<NoteEditor />} />
-          <Route path="/bank" element={<ContentBank />} />
-          <Route path="/bank/:id" element={<BankItemEditor />} />
           <Route path="/checklist" element={<Checklist />} />
-          <Route path="/queue" element={<EditorQueue />} />
           <Route path="/output" element={<EditorOutput />} />
-          <Route path="/deals" element={<Deals />} />
           <Route path="/settings" element={<Settings />} />
         </Route>
       </Routes>

@@ -144,7 +144,7 @@ export function Saved() {
                   <button
                     onClick={e => {
                       e.stopPropagation()
-                      if (confirm('Delete this note?')) deleteNote(note.id)
+                      deleteNote(note.id)
                     }}
                     className="p-1.5 rounded text-ink-muted hover:text-danger"
                   >

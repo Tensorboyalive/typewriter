@@ -21,7 +21,7 @@ interface TeamMemberRow {
 }
 
 export function Settings() {
-  const { user, effectiveRole, profile, activeChannel, updateChannel, channels, inviteTeamMember, checklistTemplates, addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate } = useStore()
+  const { user, userRole, profile, activeChannel, updateChannel, channels, inviteTeamMember, checklistTemplates, addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate } = useStore()
   const [channelName, setChannelName] = useState(activeChannel?.name ?? '')
   const [channelHandle, setChannelHandle] = useState(activeChannel?.handle ?? '')
   const [channelNiche, setChannelNiche] = useState(activeChannel?.niche ?? '')
@@ -36,7 +36,7 @@ export function Settings() {
   const [inviting, setInviting] = useState(false)
   const [teamLoading, setTeamLoading] = useState(true)
 
-  const isAdmin = effectiveRole === 'admin'
+  const isAdmin = userRole === 'admin'
 
   useEffect(() => {
     setChannelName(activeChannel?.name ?? '')
@@ -132,7 +132,6 @@ export function Settings() {
   }
 
   const handleRemoveMember = async (memberId: string) => {
-    if (!confirm('Remove this team member?')) return
     await supabase.from('team_members').delete().eq('id', memberId)
     setTeamMembers(prev => prev.filter(m => m.id !== memberId))
   }
@@ -142,7 +141,7 @@ export function Settings() {
     setTeamMembers(prev => prev.map(m => (m.id === memberId ? { ...m, role: newRole } : m)))
   }
 
-  const currentRole = ROLES.find(r => r.id === effectiveRole)
+  const currentRole = ROLES.find(r => r.id === userRole)
 
   return (
     <div className="p-8 max-w-3xl">
@@ -375,7 +374,7 @@ export function Settings() {
       </section>
 
       {/* Daily Checklist Templates */}
-      {(effectiveRole === 'admin' || effectiveRole === 'pa') && (
+      {(userRole === 'admin' || userRole === 'pa') && (
         <TemplateManager
           templates={checklistTemplates}
           onAdd={addChecklistTemplate}
@@ -437,7 +436,6 @@ function TemplateManager({
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this template item?')) return
     await onDelete(id)
   }
 

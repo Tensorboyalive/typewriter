@@ -38,10 +38,8 @@ export function NoteEditor() {
   }
 
   const handleDelete = () => {
-    if (confirm('Delete this note?')) {
-      deleteNote(note.id)
-      navigate('/saved')
-    }
+    deleteNote(note.id)
+    navigate('/saved')
   }
 
   return (
