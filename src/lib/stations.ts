@@ -1,37 +1,22 @@
-// Ambient music stations for the top-right music player.
+// Ambient radio stations. Uses SomaFM's free public MP3 streams — they're
+// CORS-friendly for <audio>, require no API key, and stay up 24/7. If a
+// stream ever returns 404 or errors, swap in another SomaFM channel:
+//   https://somafm.com/listen/
 //
-// Each station points at a public YouTube video — usually a 24/7 livestream
-// or a long ambient video. The player uses the YouTube IFrame API to play
-// audio with the video hidden.
-//
-// ─── How to customize ──────────────────────────────────────────────
-// • Find a YouTube video or livestream you like
-// • Copy the video ID from the URL:
-//     https://www.youtube.com/watch?v=jfKfPfyJRdk
-//                                     ^^^^^^^^^^^   ← this part
-// • Add/replace an entry below.
-// • For YouTube *playlists*, set `playlistId` instead of `videoId`.
-//
-// ─── Caveats ───────────────────────────────────────────────────────
-// Some streams get taken down, renamed, or region-blocked. If a station
-// won't play, replace the ID. The defaults below were stable as of the
-// refactor; verify they still work from your region.
+// Each entry points at a direct MP3 icecast URL for a SomaFM channel.
 
 export interface Station {
   id: string
-  label: string
-  hint: string
-  videoId?: string
-  playlistId?: string
+  name: string
+  url: string
+  vibe: string
 }
 
 export const STATIONS: Station[] = [
-  { id: 'lofi-girl',   label: 'Lofi Girl',        hint: 'hip hop radio — beats to relax/study to', videoId: 'jfKfPfyJRdk' },
-  { id: 'sleepy',      label: 'Sleepy Beats',     hint: 'Lofi Girl — beats to sleep to',            videoId: 'rUxyKA_-grg' },
-  { id: 'chillhop',    label: 'Chillhop Radio',   hint: 'jazzy / beats',                            videoId: '5yx6BWlEVcY' },
-  { id: 'jazz',        label: 'Coffee Shop Jazz', hint: 'warm cafe jazz ambience',                  videoId: 'Dx5qFachd3A' },
-  { id: 'classical',   label: 'Classical Focus',  hint: 'Bach / Chopin / Debussy',                  videoId: 'jgpJVI3tDbY' },
-  { id: 'rain',        label: 'Rain + Thunder',   hint: 'pure rain soundscape',                     videoId: 'q76bMs-NwRk' },
-  { id: 'deep-focus',  label: 'Deep Focus',       hint: 'minimal electronic for flow state',        videoId: 'nDq6TstdEi8' },
-  { id: 'ambient',     label: 'Ambient Space',    hint: 'sparse drones / night',                    videoId: 'tNkZsRW7h2c' },
+  { id: 'groove-salad',  name: 'Groove Salad',    vibe: 'chilled beats & grooves',     url: 'https://ice1.somafm.com/groovesalad-128-mp3' },
+  { id: 'drone-zone',    name: 'Drone Zone',      vibe: 'atmospheric ambient',         url: 'https://ice1.somafm.com/dronezone-128-mp3' },
+  { id: 'defcon',        name: 'DEF CON Radio',   vibe: 'electronic for hacking',      url: 'https://ice1.somafm.com/defcon-256-mp3' },
+  { id: 'lush',          name: 'Lush',            vibe: 'sensual vocals, downtempo',   url: 'https://ice1.somafm.com/lush-128-mp3' },
+  { id: 'deep-space',    name: 'Deep Space One',  vibe: 'deep space ambient',          url: 'https://ice1.somafm.com/deepspaceone-128-mp3' },
+  { id: 'mission',       name: 'Mission Control', vibe: 'ambient + space audio',       url: 'https://ice1.somafm.com/missioncontrol-128-mp3' },
 ]

@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
-import { Plus, Trash2, TrendingUp, TrendingDown, ArrowUpDown } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, TrendingDown, ArrowUpDown, Calendar as CalendarIcon } from 'lucide-react'
 import { useStore } from '../store'
 import { EXPENSE_CATEGORIES, INCOME_SOURCES } from '../types'
 import { Select } from './Select'
 
 export function Expenses() {
   const {
-    expenses, income, projects, conversionRate,
+    expenses, income, conversionRate,
     addExpense, deleteExpense, addIncome, deleteIncome, setConversionRate,
   } = useStore()
 
@@ -16,14 +16,12 @@ export function Expenses() {
   const [expDesc, setExpDesc] = useState('')
   const [expAmount, setExpAmount] = useState('')
   const [expCategory, setExpCategory] = useState(EXPENSE_CATEGORIES[0])
-  const [expProjectId, setExpProjectId] = useState('')
   const [expDate, setExpDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [expCurrency, setExpCurrency] = useState<'INR' | 'USD'>('INR')
 
   const [incDesc, setIncDesc] = useState('')
   const [incAmount, setIncAmount] = useState('')
   const [incSource, setIncSource] = useState(INCOME_SOURCES[0])
-  const [incProjectId, setIncProjectId] = useState('')
   const [incDate, setIncDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [incCurrency, setIncCurrency] = useState<'INR' | 'USD'>('INR')
 
@@ -57,7 +55,7 @@ export function Expenses() {
       description: expDesc.trim(),
       amount,
       category: expCategory,
-      project_id: expProjectId || null,
+      project_id: null,
       date: expDate,
     })
     setExpDesc('')
@@ -74,7 +72,7 @@ export function Expenses() {
       description: incDesc.trim(),
       amount,
       source: incSource,
-      project_id: incProjectId || null,
+      project_id: null,
       date: incDate,
     })
     setIncDesc('')
@@ -89,7 +87,6 @@ export function Expenses() {
     description: string
     amount: number
     label: string
-    project?: string
     date: string
   }
 
@@ -100,7 +97,6 @@ export function Expenses() {
       description: e.description,
       amount: e.amount,
       label: e.category,
-      project: projects.find(p => p.id === e.project_id)?.title,
       date: e.date,
     })),
     ...income.map(i => ({
@@ -109,15 +105,13 @@ export function Expenses() {
       description: i.description,
       amount: i.amount,
       label: i.source,
-      project: projects.find(p => p.id === i.project_id)?.title,
       date: i.date,
     })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-  const projectOptions = [
-    { value: '', label: 'No project' },
-    ...projects.map(p => ({ value: p.id, label: p.title })),
-  ]
+  // Styled date input: token classes + calendar icon glyph overlaid on the left
+  // so it matches the rest of the UI instead of the raw OS date picker.
+  const dateInputCls = 'bg-canvas border border-line rounded pl-8 pr-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-blueprint w-full'
 
   return (
     <div className="p-8 max-w-4xl">
@@ -244,18 +238,15 @@ export function Expenses() {
               onChange={setExpCategory}
               options={EXPENSE_CATEGORIES.map(c => ({ value: c, label: c }))}
             />
-            <Select
-              value={expProjectId}
-              onChange={setExpProjectId}
-              options={projectOptions}
-              placeholder="No project"
-            />
-            <input
-              value={expDate}
-              onChange={e => setExpDate(e.target.value)}
-              type="date"
-              className="input"
-            />
+            <div className="relative">
+              <CalendarIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+              <input
+                value={expDate}
+                onChange={e => setExpDate(e.target.value)}
+                type="date"
+                className={dateInputCls}
+              />
+            </div>
             <button
               onClick={handleAddExpense}
               className="px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors"
@@ -305,18 +296,15 @@ export function Expenses() {
               onChange={setIncSource}
               options={INCOME_SOURCES.map(s => ({ value: s, label: s }))}
             />
-            <Select
-              value={incProjectId}
-              onChange={setIncProjectId}
-              options={projectOptions}
-              placeholder="No project"
-            />
-            <input
-              value={incDate}
-              onChange={e => setIncDate(e.target.value)}
-              type="date"
-              className="input"
-            />
+            <div className="relative">
+              <CalendarIcon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-ink-muted pointer-events-none" />
+              <input
+                value={incDate}
+                onChange={e => setIncDate(e.target.value)}
+                type="date"
+                className={dateInputCls}
+              />
+            </div>
             <button
               onClick={handleAddIncome}
               className="px-4 py-2 bg-success text-white rounded-md text-sm hover:opacity-90 transition-opacity"
@@ -339,9 +327,6 @@ export function Expenses() {
               <th className="text-left text-[10px] uppercase tracking-[0.2em] text-ink-muted p-3 font-medium">
                 Type
               </th>
-              <th className="text-left text-[10px] uppercase tracking-[0.2em] text-ink-muted p-3 font-medium">
-                Project
-              </th>
               <th className="text-right text-[10px] uppercase tracking-[0.2em] text-ink-muted p-3 font-medium">
                 Amount
               </th>
@@ -355,7 +340,7 @@ export function Expenses() {
             {allEntries.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={6}
                   className="p-12 text-center text-ink-muted text-sm"
                 >
                   No transactions yet
@@ -377,9 +362,6 @@ export function Expenses() {
                   <td className="p-3 text-sm text-ink">{entry.description}</td>
                   <td className="p-3 text-[11px] text-ink-secondary">
                     {entry.label}
-                  </td>
-                  <td className="p-3 text-[11px] text-ink-muted">
-                    {entry.project || '\u2014'}
                   </td>
                   <td
                     className={`p-3 text-sm text-right tabular-nums ${

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock } from 'lucide-react'
+import { getDayOfYear } from 'date-fns'
 import { useStore } from '../store'
 import { ChannelSwitcher } from './ChannelSwitcher'
 import { ThemeToggle } from './ThemeToggle'
@@ -8,7 +9,7 @@ import { MusicPlayer } from './MusicPlayer'
 import { isUnlocked, lockAdmin } from './AdminLock'
 
 const NAV = [
-  { to: '/', icon: Home, label: 'Home' },
+  { to: '/', icon: Home, label: 'Dashboard' },
   { to: '/today', icon: Sun, label: 'Today' },
   { to: '/calendar', icon: Calendar, label: 'Calendar' },
   { to: '/projects', icon: LayoutGrid, label: 'Pipeline' },
@@ -19,10 +20,53 @@ const NAV = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
+// Curated daily rotation — Naval, Marcus, Seneca, Munger, PG, Rubin.
+// Short. Deterministic by day-of-year so the same day always shows the same.
+const QUOTES: { text: string; author: string }[] = [
+  { text: 'Earn with your mind, not your time.', author: 'Naval' },
+  { text: 'Play long-term games with long-term people.', author: 'Naval' },
+  { text: 'Read what you love until you love to read.', author: 'Naval' },
+  { text: 'Specific knowledge is found by pursuing genuine curiosity.', author: 'Naval' },
+  { text: 'The obstacle is the way.', author: 'Marcus' },
+  { text: 'Waste no more time arguing what a good man is. Be one.', author: 'Marcus' },
+  { text: 'You have power over your mind — not outside events.', author: 'Marcus' },
+  { text: 'Confine yourself to the present.', author: 'Marcus' },
+  { text: 'We suffer more in imagination than in reality.', author: 'Seneca' },
+  { text: 'Luck is what happens when preparation meets opportunity.', author: 'Seneca' },
+  { text: 'While we wait for life, life passes.', author: 'Seneca' },
+  { text: 'It is not the man who has too little, but the man who craves more.', author: 'Seneca' },
+  { text: 'The big money is not in the buying or selling, but in the waiting.', author: 'Munger' },
+  { text: 'Compound interest is the eighth wonder.', author: 'Munger' },
+  { text: 'Invert, always invert.', author: 'Munger' },
+  { text: 'Take a simple idea and take it seriously.', author: 'Munger' },
+  { text: 'Show up every day.', author: 'Rubin' },
+  { text: 'The best art divides the audience.', author: 'Rubin' },
+  { text: 'Begin where you are.', author: 'Rubin' },
+  { text: 'Make something people want.', author: 'pg' },
+  { text: 'Live in the future, then build what’s missing.', author: 'pg' },
+  { text: 'Do things that don’t scale.', author: 'pg' },
+  { text: 'Keep your identity small.', author: 'pg' },
+  { text: 'Write. Often.', author: 'pg' },
+  { text: 'The most important skill is learning how to learn.', author: 'Naval' },
+  { text: 'Desire is a contract with yourself to be unhappy until you get it.', author: 'Naval' },
+  { text: 'Be the silence between the notes.', author: 'Rubin' },
+  { text: 'Every new beginning comes from some other beginning’s end.', author: 'Seneca' },
+  { text: 'Patience is bitter, but its fruit is sweet.', author: 'Munger' },
+  { text: 'Ship it. Then fix it.', author: 'pg' },
+]
+
+function useDailyQuote() {
+  return useMemo(() => {
+    const idx = (getDayOfYear(new Date()) - 1) % QUOTES.length
+    return QUOTES[idx]
+  }, [])
+}
+
 export function Layout() {
   const { signOut, exportAllData } = useStore()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [unlocked, setUnlocked] = useState(isUnlocked())
+  const quote = useDailyQuote()
   useEffect(() => {
     const h = () => setUnlocked(isUnlocked())
     window.addEventListener('tw-admin-unlock-change', h)
@@ -49,7 +93,7 @@ export function Layout() {
       <div className="p-6 pb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-light tracking-wide text-ink">typewriter</h1>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mt-1">control tower</p>
+          <p className="text-[11px] italic text-ink-muted tracking-normal mt-1">where we write</p>
         </div>
         <button onClick={() => setMobileOpen(false)}
           className="md:hidden p-1 text-ink-muted hover:text-ink" aria-label="Close menu">
@@ -94,8 +138,11 @@ export function Layout() {
         </button>
       </div>
 
+      {/* Daily quote + sync chip */}
       <div className="px-4 py-3 border-t border-line">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Synced to cloud</p>
+        <p className="text-[11px] italic text-ink-muted leading-relaxed">“{quote.text}”</p>
+        <p className="text-[10px] not-italic text-ink-muted mt-1">— {quote.author}</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mt-3">Synced to cloud</p>
       </div>
     </aside>
   )

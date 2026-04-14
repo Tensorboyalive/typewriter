@@ -1,23 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { format } from 'date-fns'
-import { Pin, Plus, Trash2, Target, ChevronDown } from 'lucide-react'
+import { format, addDays, subDays, parseISO, isBefore, startOfDay } from 'date-fns'
+import { Pin, Plus, Trash2, Target, ChevronDown, ChevronLeft, ChevronRight, ArrowRight } from 'lucide-react'
 import { useStore } from '../store'
 import { PersonaSwitcher } from './PersonaSwitcher'
 import type { TimeBlock, ChecklistItem, Project } from '../types'
 
+// ── Constants ────────────────────────────────────────────────────────
+// Full 24h day. 60px per hour → 1440px total. Each 15-min slot = 15px.
 const HOUR_PX = 60
-const START_HOUR = 6
-const END_HOUR = 24   // exclusive
+const START_HOUR = 0
+const END_HOUR = 24
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
+const SNAP_MIN = 15 // snap increment for resize/drag
 
 const minToLabel = (m: number) => {
-  const h = Math.floor(m / 60)
+  const h = Math.floor(m / 60) % 24
   const mm = m % 60
   const period = h >= 12 ? 'pm' : 'am'
   const h12 = ((h + 11) % 12) + 1
   return mm === 0 ? `${h12}${period}` : `${h12}:${String(mm).padStart(2, '0')}${period}`
 }
+
+const clampMin = (m: number) => Math.max(START_HOUR * 60, Math.min(END_HOUR * 60, m))
+const snap = (m: number) => Math.round(m / SNAP_MIN) * SNAP_MIN
 
 interface AddModalState {
   date: string
@@ -25,12 +31,18 @@ interface AddModalState {
   end_min: number
 }
 
+const DRAG_MIME = 'application/x-tw-block'
+
 export function Today() {
   const { persona, timeBlocks, fetchTimeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, setMIT,
     checklistItems, projects, allProjects } = useStore()
   const navigate = useNavigate()
 
-  const today = format(new Date(), 'yyyy-MM-dd')
+  const [displayDate, setDisplayDate] = useState<Date>(() => new Date())
+  const dateKey = format(displayDate, 'yyyy-MM-dd')
+  const isToday = dateKey === format(new Date(), 'yyyy-MM-dd')
+  const isPast = isBefore(startOfDay(displayDate), startOfDay(new Date()))
+
   const [nowMin, setNowMin] = useState(() => {
     const d = new Date()
     return d.getHours() * 60 + d.getMinutes()
@@ -39,10 +51,11 @@ export function Today() {
   const [mitPicker, setMitPicker] = useState(false)
   const railRef = useRef<HTMLDivElement>(null)
 
+  // Refetch when date or persona changes
   useEffect(() => {
-    fetchTimeBlocks(today)
+    fetchTimeBlocks(dateKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [today, persona])
+  }, [dateKey, persona])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -61,13 +74,11 @@ export function Today() {
   }, [])
 
   const myBlocks = useMemo(
-    () => timeBlocks.filter(b => b.persona === persona && b.date === today),
-    [timeBlocks, persona, today],
+    () => timeBlocks.filter(b => b.persona === persona && b.date === dateKey),
+    [timeBlocks, persona, dateKey],
   )
   const mit = myBlocks.find(b => b.is_mit) ?? null
 
-  // Unscheduled tray: checklist items for today (user-scoped) +
-  // projects scheduled today across all channels. Exclude anything already in a block.
   const usedProjectIds = new Set(myBlocks.map(b => b.project_id).filter(Boolean) as string[])
   const usedChecklistIds = new Set(myBlocks.map(b => b.checklist_item_id).filter(Boolean) as string[])
 
@@ -75,11 +86,32 @@ export function Today() {
     c => c.status !== 'done' && !usedChecklistIds.has(c.id),
   )
   const trayProjects = allProjects.filter(
-    p => p.scheduled_date?.split('T')[0] === today && !usedProjectIds.has(p.id),
+    p => p.scheduled_date?.split('T')[0] === dateKey && !usedProjectIds.has(p.id),
   )
 
   const nowOffsetPx = (nowMin - START_HOUR * 60) * (HOUR_PX / 60)
-  const showNowLine = nowMin >= START_HOUR * 60 && nowMin < END_HOUR * 60
+  const showNowLine = isToday && nowMin >= START_HOUR * 60 && nowMin < END_HOUR * 60
+
+  const handleMoveToTomorrow = async (block: TimeBlock) => {
+    const nextDay = format(addDays(parseISO(block.date), 1), 'yyyy-MM-dd')
+    await updateTimeBlock(block.id, { date: nextDay })
+  }
+
+  // Drop handler on the hour grid — compute new start_min from drop Y offset.
+  // dataTransfer payload carries the block id and its duration (minutes).
+  const handleGridDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const raw = e.dataTransfer.getData(DRAG_MIME)
+    if (!raw) return
+    const [id, durStr] = raw.split('|')
+    const duration = Number(durStr) || 60
+    const rect = e.currentTarget.getBoundingClientRect()
+    const y = e.clientY - rect.top
+    const minsFromTop = (y / HOUR_PX) * 60 + START_HOUR * 60
+    const newStart = snap(clampMin(minsFromTop))
+    const newEnd = clampMin(newStart + duration)
+    await updateTimeBlock(id, { start_min: newStart, end_min: newEnd })
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -88,14 +120,39 @@ export function Today() {
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[10px] uppercase tracking-[0.25em] text-ink-muted">Today</p>
-            <h1 className="text-xl sm:text-2xl font-light text-ink">{format(new Date(), 'EEEE, MMMM d')}</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <button
+                onClick={() => setDisplayDate(d => subDays(d, 1))}
+                aria-label="Previous day"
+                className="p-1 rounded hover:bg-canvas text-ink-muted hover:text-ink"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <h1 className="text-xl sm:text-2xl font-light text-ink tabular-nums">
+                {format(displayDate, 'EEEE, MMMM d')}
+              </h1>
+              <button
+                onClick={() => setDisplayDate(d => addDays(d, 1))}
+                aria-label="Next day"
+                className="p-1 rounded hover:bg-canvas text-ink-muted hover:text-ink"
+              >
+                <ChevronRight size={18} />
+              </button>
+              {!isToday && (
+                <button
+                  onClick={() => setDisplayDate(new Date())}
+                  className="ml-1 px-2 py-1 text-[11px] uppercase tracking-wider text-blueprint border border-blueprint/40 rounded hover:bg-blueprint-light/50"
+                >
+                  Today
+                </button>
+              )}
+            </div>
           </div>
           <div className="shrink-0">
             <PersonaSwitcher />
           </div>
         </div>
 
-        {/* MIT pinned slot */}
         <MITSlot mit={mit} onPick={() => setMitPicker(true)}
           onClear={() => mit && deleteTimeBlock(mit.id)}
           onOpen={() => mit?.project_id && navigate(`/projects/${mit.project_id}`)}
@@ -106,18 +163,22 @@ export function Today() {
 
       {/* Body: rail + tray */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Hourly rail */}
+        {/* Hourly rail — scrollable container keeps the header put */}
         <div ref={railRef} className="flex-1 overflow-auto relative">
-          <div className="relative" style={{ height: (END_HOUR - START_HOUR) * HOUR_PX }}>
+          <div
+            className="relative"
+            style={{ height: (END_HOUR - START_HOUR) * HOUR_PX }}
+            onDragOver={e => e.preventDefault()}
+            onDrop={handleGridDrop}
+          >
             {HOURS.map(h => (
               <HourRow
                 key={h}
                 hour={h}
-                onAdd={() => setAddModal({ date: today, start_min: h * 60, end_min: (h + 1) * 60 })}
+                onAdd={() => setAddModal({ date: dateKey, start_min: h * 60, end_min: (h + 1) * 60 })}
               />
             ))}
 
-            {/* Now line */}
             {showNowLine && (
               <div
                 className="absolute left-0 right-0 pointer-events-none z-20"
@@ -128,31 +189,33 @@ export function Today() {
               </div>
             )}
 
-            {/* Blocks layer */}
             {myBlocks.map(b => (
               <BlockCard
                 key={b.id}
                 block={b}
                 projects={allProjects}
+                isPast={isPast}
                 onDelete={() => deleteTimeBlock(b.id)}
                 onOpen={() => b.project_id && navigate(`/projects/${b.project_id}`)}
                 onRelabel={(label) => updateTimeBlock(b.id, { label })}
+                onResize={(endMin) => updateTimeBlock(b.id, { end_min: endMin })}
+                onMoveToTomorrow={() => handleMoveToTomorrow(b)}
               />
             ))}
           </div>
         </div>
 
-        {/* Unscheduled tray — right side on desktop, collapsible bottom sheet on mobile */}
         <TrayPanel
           checklist={trayChecklist}
           projects={trayProjects}
           onAssign={async (kind, item) => {
-            // Add to next empty hour slot (or nowHour)
-            const hour = Math.max(START_HOUR, Math.min(END_HOUR - 1, Math.floor(nowMin / 60)))
+            const baseHour = isToday
+              ? Math.max(START_HOUR, Math.min(END_HOUR - 1, Math.floor(nowMin / 60)))
+              : 9
             await addTimeBlock({
-              date: today,
-              start_min: hour * 60,
-              end_min: (hour + 1) * 60,
+              date: dateKey,
+              start_min: baseHour * 60,
+              end_min: (baseHour + 1) * 60,
               project_id: kind === 'project' ? item.id : null,
               checklist_item_id: kind === 'checklist' ? item.id : null,
               label: kind === 'project' ? (item as Project).title : (item as ChecklistItem).title,
@@ -161,7 +224,6 @@ export function Today() {
         />
       </div>
 
-      {/* Add modal */}
       {addModal && (
         <AddBlockModal
           state={addModal}
@@ -181,7 +243,7 @@ export function Today() {
           projects={allProjects}
           onClose={() => setMitPicker(false)}
           onPick={async (ref) => {
-            await setMIT(today, ref)
+            await setMIT(dateKey, ref)
             setMitPicker(false)
           }}
         />
@@ -246,22 +308,61 @@ function HourRow({ hour, onAdd }: { hour: number; onAdd: () => void }) {
   )
 }
 
-function BlockCard({ block, projects, onDelete, onOpen, onRelabel }: {
+function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onResize, onMoveToTomorrow }: {
   block: TimeBlock
   projects: Project[]
+  isPast: boolean
   onDelete: () => void
   onOpen: () => void
   onRelabel: (label: string) => void
+  onResize: (endMin: number) => void
+  onMoveToTomorrow: () => void
 }) {
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(block.label ?? '')
+  // Local preview height during drag-resize so the UI is immediate. Commit
+  // to the store on pointerup.
+  const [liveEndMin, setLiveEndMin] = useState<number | null>(null)
+
   const top = (block.start_min - START_HOUR * 60) * (HOUR_PX / 60)
-  const height = Math.max(24, (block.end_min - block.start_min) * (HOUR_PX / 60) - 4)
+  const effectiveEnd = liveEndMin ?? block.end_min
+  const height = Math.max(24, (effectiveEnd - block.start_min) * (HOUR_PX / 60) - 4)
   const proj = block.project_id ? projects.find(p => p.id === block.project_id) : null
   const title = proj?.title ?? block.label ?? 'Untitled'
 
+  // Pointer-based bottom-edge resize. Document-level listeners so the drag
+  // continues even if the pointer leaves the card, and are cleaned up on
+  // pointerup to avoid leaks.
+  const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.stopPropagation()
+    e.preventDefault()
+    const startY = e.clientY
+    const startEnd = block.end_min
+    const move = (ev: PointerEvent) => {
+      const dy = ev.clientY - startY
+      const deltaMin = (dy / HOUR_PX) * 60
+      const nextEnd = snap(clampMin(Math.max(block.start_min + SNAP_MIN, startEnd + deltaMin)))
+      setLiveEndMin(nextEnd)
+    }
+    const up = () => {
+      document.removeEventListener('pointermove', move)
+      document.removeEventListener('pointerup', up)
+      setLiveEndMin(committed => {
+        if (committed != null && committed !== block.end_min) onResize(committed)
+        return null
+      })
+    }
+    document.addEventListener('pointermove', move)
+    document.addEventListener('pointerup', up)
+  }
+
   return (
     <div
+      draggable
+      onDragStart={e => {
+        e.dataTransfer.effectAllowed = 'move'
+        e.dataTransfer.setData(DRAG_MIME, `${block.id}|${block.end_min - block.start_min}`)
+      }}
       className={`absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
         block.is_mit
           ? 'bg-blueprint text-white border-blueprint-dark'
@@ -272,7 +373,7 @@ function BlockCard({ block, projects, onDelete, onOpen, onRelabel }: {
       <div className="flex items-start justify-between gap-2 h-full">
         <div className="flex-1 min-w-0">
           <p className={`text-[10px] uppercase tracking-wider ${block.is_mit ? 'text-white/70' : 'text-ink-muted'}`}>
-            {minToLabel(block.start_min)} – {minToLabel(block.end_min)}
+            {minToLabel(block.start_min)} – {minToLabel(effectiveEnd)}
             {block.is_mit && ' · MIT'}
           </p>
           {editing ? (
@@ -292,11 +393,30 @@ function BlockCard({ block, projects, onDelete, onOpen, onRelabel }: {
               {title}
             </button>
           )}
+          {isPast && (
+            <button
+              onClick={onMoveToTomorrow}
+              className={`mt-0.5 text-[10px] inline-flex items-center gap-0.5 hover:underline ${
+                block.is_mit ? 'text-white/80' : 'text-ink-muted hover:text-blueprint'
+              }`}
+              title="Move to tomorrow"
+            >
+              <ArrowRight size={10} /> Tomorrow
+            </button>
+          )}
         </div>
         <button onClick={onDelete} className={`p-0.5 opacity-60 hover:opacity-100 ${block.is_mit ? 'text-white' : 'text-ink-muted hover:text-danger'}`}>
           <Trash2 size={12} />
         </button>
       </div>
+
+      {/* Bottom resize handle — pointer events only, does not trigger drag. */}
+      <div
+        onPointerDown={startResize}
+        onDragStart={e => e.preventDefault()}
+        className="absolute left-0 right-0 bottom-0 h-1.5 cursor-ns-resize"
+        style={{ touchAction: 'none' }}
+      />
     </div>
   )
 }
@@ -311,7 +431,6 @@ function TrayPanel({ checklist, projects, onAssign }: {
 
   return (
     <>
-      {/* Desktop: right column */}
       <aside className="hidden md:flex w-64 border-l border-line flex-col overflow-hidden bg-surface/30">
         <div className="px-3 py-3 border-b border-line-light">
           <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Unscheduled</p>
@@ -328,7 +447,6 @@ function TrayPanel({ checklist, projects, onAssign }: {
         </div>
       </aside>
 
-      {/* Mobile: bottom sheet */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-20 max-h-[50vh] flex flex-col">
         <button
           onClick={() => setOpen(o => !o)}

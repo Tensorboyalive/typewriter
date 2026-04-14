@@ -101,18 +101,19 @@ export function Calendar() {
           const inMonth = isSameMonth(day, current)
           const today = isToday(day)
           const selected = selectedDate && isSameDay(day, selectedDate)
+          const weekend = day.getDay() === 0 || day.getDay() === 6
 
           return (
             <div
               key={day.toISOString()}
               onClick={() => setSelectedDate(day)}
               className={`min-h-28 p-2 border-r border-b border-line cursor-pointer transition-colors
-                ${!inMonth ? 'bg-canvas/60 text-ink-muted' : 'bg-surface hover:bg-blueprint-light/20'}
+                ${!inMonth ? 'bg-canvas/60 text-ink-muted' : weekend ? 'bg-canvas/60 hover:bg-blueprint-light/20' : 'bg-surface hover:bg-blueprint-light/20'}
                 ${selected ? 'ring-2 ring-blueprint ring-inset' : ''}`}
             >
               <span
                 className={`text-sm inline-flex items-center justify-center w-7 h-7 rounded-full
-                  ${today ? 'bg-blueprint text-white font-medium' : ''}`}
+                  ${today ? 'bg-blueprint text-white font-medium' : weekend && inMonth ? 'text-blueprint' : ''}`}
               >
                 {format(day, 'd')}
               </span>

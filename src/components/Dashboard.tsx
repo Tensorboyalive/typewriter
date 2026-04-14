@@ -113,49 +113,46 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Pipeline + Finances */}
+      {/* Pipeline (per-channel horizontal bars) + Finances donut */}
       <div className="grid grid-cols-2 gap-6 mb-6">
-        <div className="bg-surface border border-line rounded-lg p-6">
+        <div className="bg-surface border border-line rounded-xl p-6">
           <div className="flex items-center justify-between mb-5">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Pipeline (all channels)</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Pipeline by channel</p>
             <span className="text-3xl font-light text-ink tabular-nums">{totalProjects}</span>
           </div>
           <div className="space-y-3">
+            {channelStats.length === 0 && (
+              <p className="text-[11px] text-ink-muted">No channels yet.</p>
+            )}
+            {channelStats.map(ch => {
+              const maxCount = Math.max(...channelStats.map(c => c.total), 1)
+              return (
+                <div key={ch.id}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] text-ink-secondary truncate pr-2">{ch.name}</span>
+                    <span className="text-[11px] text-ink-muted tabular-nums">{ch.total}</span>
+                  </div>
+                  <div className="h-2 bg-canvas rounded overflow-hidden">
+                    <div className="h-full bg-blueprint rounded transition-all"
+                      style={{ width: `${(ch.total / maxCount) * 100}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+          {/* Secondary: stage breakdown, subtle */}
+          <div className="mt-5 pt-4 border-t border-line-light flex items-center gap-4 flex-wrap">
             {pipeline.map(s => (
-              <div key={s.id}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[11px] text-ink-secondary">{s.label}</span>
-                  <span className="text-[11px] text-ink-muted tabular-nums">{s.count}</span>
-                </div>
-                <div className="h-1.5 bg-canvas rounded-full overflow-hidden">
-                  <div className="h-full bg-blueprint rounded-full transition-all"
-                    style={{ width: totalProjects > 0 ? `${(s.count / totalProjects) * 100}%` : '0%' }} />
-                </div>
+              <div key={s.id} className="flex items-baseline gap-1.5">
+                <span className="text-sm font-light text-ink tabular-nums">{s.count}</span>
+                <span className="text-[10px] uppercase tracking-wider text-ink-muted">{s.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <AdminLock variant="inline" label="Finances">
-          <div className="bg-surface border border-line rounded-lg p-6">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-5">Finances (this month)</p>
-            <div className="space-y-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Income</p>
-                <p className="text-3xl font-light text-success tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Expenses</p>
-                <p className="text-3xl font-light text-danger tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</p>
-              </div>
-              <div className="pt-3 border-t border-line-light">
-                <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Net</p>
-                <p className={`text-3xl font-light tabular-nums ${net >= 0 ? 'text-success' : 'text-danger'}`}>
-                  {net >= 0 ? '+' : '-'}₹{Math.abs(net).toLocaleString('en-IN')}
-                </p>
-              </div>
-            </div>
-          </div>
+        <AdminLock variant="inline">
+          <FinancesDonut totalEarned={totalEarned} totalSpent={totalSpent} net={net} />
         </AdminLock>
       </div>
 
@@ -312,6 +309,60 @@ export function Dashboard() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// Inline SVG donut for Income vs Expenses. Two arcs using stroke-dasharray —
+// no chart library. Keeps bundle tiny and matches the flat-design language.
+function FinancesDonut({ totalEarned, totalSpent, net }: {
+  totalEarned: number; totalSpent: number; net: number
+}) {
+  const total = totalEarned + totalSpent
+  const incomePct = total > 0 ? totalEarned / total : 0
+  const R = 54
+  const C = 2 * Math.PI * R // circumference
+  const incomeLen = C * incomePct
+  const expenseLen = C - incomeLen
+
+  return (
+    <div className="bg-surface border border-line rounded-xl p-6">
+      <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-4">Finances (this month)</p>
+
+      <div className="flex items-center gap-5">
+        <svg width={140} height={140} viewBox="0 0 140 140" className="shrink-0 -rotate-90">
+          {/* track */}
+          <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-line" strokeWidth={16} />
+          {total > 0 && (
+            <>
+              {/* income arc */}
+              <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-success"
+                strokeWidth={16} strokeDasharray={`${incomeLen} ${C}`} strokeDashoffset={0} />
+              {/* expenses arc — offset by income arc */}
+              <circle cx={70} cy={70} r={R} fill="none" stroke="currentColor" className="text-danger"
+                strokeWidth={16} strokeDasharray={`${expenseLen} ${C}`} strokeDashoffset={-incomeLen} />
+            </>
+          )}
+        </svg>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2.5 h-2.5 rounded-sm bg-success" />
+            <span className="text-[11px] text-ink-secondary flex-1">Income</span>
+            <span className="text-sm text-ink tabular-nums">₹{totalEarned.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="flex items-center gap-2 mb-3">
+            <span className="w-2.5 h-2.5 rounded-sm bg-danger" />
+            <span className="text-[11px] text-ink-secondary flex-1">Expenses</span>
+            <span className="text-sm text-ink tabular-nums">₹{totalSpent.toLocaleString('en-IN')}</span>
+          </div>
+          <div className="pt-3 border-t border-line-light">
+            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-0.5">Net</p>
+            <p className={`text-2xl font-light tabular-nums ${net >= 0 ? 'text-success' : 'text-danger'}`}>
+              {net >= 0 ? '+' : '-'}₹{Math.abs(net).toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

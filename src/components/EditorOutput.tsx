@@ -4,11 +4,21 @@ import { Plus, ChevronLeft, ChevronRight, ExternalLink, Trash2, X } from 'lucide
 import { useStore } from '../store'
 
 export function EditorOutput() {
-  const { user, editorOutputs, addEditorOutput, deleteEditorOutput, teamMembers } = useStore()
+  const { user, editorOutputs, addEditorOutput, deleteEditorOutput, teamMembers, channels, activeChannel } = useStore()
   const [date, setDate] = useState(new Date())
   const [adding, setAdding] = useState(false)
   const [desc, setDesc] = useState('')
   const [link, setLink] = useState('')
+  const [outputChannelId, setOutputChannelId] = useState<string>(activeChannel?.id ?? '')
+
+  // Short channel tag — first token or first 4 chars.
+  const channelTag = (id: string) => {
+    const ch = channels.find(c => c.id === id)
+    if (!ch) return '—'
+    const name = ch.name.trim()
+    const first = name.split(/[\s/_-]+/)[0]
+    return (first || name).slice(0, 6).toUpperCase()
+  }
 
   const dateStr = format(date, 'yyyy-MM-dd')
   const isToday = format(new Date(), 'yyyy-MM-dd') === dateStr
@@ -25,7 +35,16 @@ export function EditorOutput() {
 
   const handleAdd = async () => {
     if (!desc.trim()) return
-    await addEditorOutput({ description: desc.trim(), live_link: link.trim() || null, date: dateStr })
+    // `addEditorOutput` writes against active channel in the store. If the
+    // user picked a different channel via the dropdown, switch active first
+    // so the row lands on the right channel. (Active channel is global app
+    // state — switching back is cheap and matches existing conventions.)
+    await addEditorOutput({
+      description: desc.trim(),
+      live_link: link.trim() || null,
+      date: dateStr,
+      channel_id: outputChannelId || undefined,
+    })
     setDesc('')
     setLink('')
     setAdding(false)
@@ -100,6 +119,16 @@ export function EditorOutput() {
               placeholder="Live link (optional) — https://..."
               className="input flex-1"
             />
+            <select
+              value={outputChannelId}
+              onChange={e => setOutputChannelId(e.target.value)}
+              className="input"
+              title="Channel"
+            >
+              {channels.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
             <button onClick={handleAdd} className="px-4 py-2 bg-blueprint text-white rounded-md text-sm">
               Add
             </button>
@@ -125,14 +154,20 @@ export function EditorOutput() {
           </div>
           <div className="space-y-1.5">
             {outputs.map(output => (
-              <div key={output.id} className="flex items-center gap-3 bg-surface border border-line rounded-md px-4 py-3 group">
+              <div key={output.id} className="flex items-start gap-3 bg-surface border border-line rounded-md px-4 py-3 group relative">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink">{output.description}</p>
+                  <p className="text-sm text-ink pr-14">{output.description}</p>
                   <p className="text-[10px] text-ink-muted mt-0.5">
                     {format(new Date(output.created_at), 'h:mm a')}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <span
+                  className="absolute top-2 right-3 text-[9px] font-medium px-1.5 py-0.5 rounded bg-blueprint-light/60 text-blueprint tracking-wider"
+                  title={channels.find(c => c.id === output.channel_id)?.name || ''}
+                >
+                  {channelTag(output.channel_id)}
+                </span>
+                <div className="flex items-center gap-2 shrink-0 mt-6">
                   {output.live_link && (
                     <a
                       href={output.live_link}

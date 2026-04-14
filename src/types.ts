@@ -1,12 +1,11 @@
 export type ContentType = 'reel' | 'story' | 'post' | 'carousel' | 'thread' | 'article' | 'youtube' | 'short'
-export type ProjectStatus = 'idea' | 'scripted' | 'assigned' | 'in_edit' | 'ready' | 'posted'
+export type ProjectStatus = 'idea' | 'scripted' | 'in_edit' | 'ready' | 'posted'
 export type Platform = 'tb' | 'tmg' | 'linkedin' | 'twitter' | 'youtube' | 'substack' | 'cevi'
 export type TimeSlot = 'morning' | 'afternoon' | 'evening'
 
 export const STATUSES: { id: ProjectStatus; label: string }[] = [
   { id: 'idea', label: 'Ideas' },
   { id: 'scripted', label: 'Scripted' },
-  { id: 'assigned', label: 'Assigned' },
   { id: 'in_edit', label: 'In Edit' },
   { id: 'ready', label: 'Ready' },
   { id: 'posted', label: 'Posted' },

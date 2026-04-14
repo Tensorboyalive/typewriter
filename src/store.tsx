@@ -87,7 +87,7 @@ interface StoreContextType {
   deleteChecklistTemplate: (id: string) => Promise<void>
   applyDailyTemplate: (date: string) => Promise<number>
 
-  addEditorOutput: (o: { description: string; live_link?: string | null; date?: string }) => Promise<EditorOutput | null>
+  addEditorOutput: (o: { description: string; live_link?: string | null; date?: string; channel_id?: string }) => Promise<EditorOutput | null>
   updateEditorOutput: (id: string, updates: Partial<EditorOutput>) => Promise<void>
   deleteEditorOutput: (id: string) => Promise<void>
   fetchEditorOutputs: () => Promise<void>
@@ -268,7 +268,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       supabase.from('timer_sessions').select('*').in('channel_id', channelIds).is('archived_at', null).order('completed_at', { ascending: false }),
     ])
 
-    setProjects(pRes.data ?? [])
+    // Legacy 'assigned' stage was removed — coerce any residual rows to 'scripted'
+    // on read so the UI doesn't break. (No DB migration; these will naturally
+    // get overwritten next time someone edits the project.)
+    const coerce = (rows: Project[] | null | undefined) =>
+      (rows ?? []).map(p => (p.status as string) === 'assigned' ? { ...p, status: 'scripted' as const } : p)
+    setProjects(coerce(pRes.data))
     setSessions(sRes.data ?? [])
     setEditorOutputs(oRes.data ?? [])
     setExpenses(eRes.data ?? [])
@@ -277,7 +282,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setChecklistItems(cRes.data ?? [])
     setChecklistTemplates(tRes.data ?? [])
     setConversionRateState(settRes.data?.conversion_rate ?? 84)
-    setAllProjects(apRes.data ?? [])
+    setAllProjects(coerce(apRes.data))
     setAllSessions(asRes.data ?? [])
     setDataLoading(false)
   }, [user])
@@ -447,11 +452,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return added
   }
 
-  const addEditorOutput = async (o: { description: string; live_link?: string | null; date?: string }) => {
+  const addEditorOutput = async (o: { description: string; live_link?: string | null; date?: string; channel_id?: string }) => {
     const { data, error } = await supabase.from('editor_outputs').insert({
       description: o.description, live_link: o.live_link ?? null,
       date: o.date ?? localDateKey(),
-      channel_id: activeChannelId!, user_id: user!.id,
+      channel_id: o.channel_id ?? activeChannelId!, user_id: user!.id,
     }).select().single()
     if (!error && data) { setEditorOutputs(prev => [data, ...prev]); return data as EditorOutput }
     return null
