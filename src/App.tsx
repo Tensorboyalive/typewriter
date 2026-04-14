@@ -4,6 +4,7 @@ import { StoreProvider, useStore } from './store'
 import { Auth } from './components/Auth'
 import { Layout } from './components/Layout'
 import { Dashboard } from './components/Dashboard'
+import { Today } from './components/Today'
 import { Calendar } from './components/Calendar'
 import { Kanban } from './components/Kanban'
 import { ScriptEditor } from './components/ScriptEditor'
@@ -13,6 +14,7 @@ import { NoteEditor } from './components/NoteEditor'
 import { Checklist } from './components/Checklist'
 import { EditorOutput } from './components/EditorOutput'
 import { Settings } from './components/Settings'
+import { AdminLock } from './components/AdminLock'
 
 function AppContent() {
   const { user, authLoading, dataLoading } = useStore()
@@ -40,11 +42,12 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<AdminLock label="Dashboard"><Dashboard /></AdminLock>} />
+          <Route path="/today" element={<Today />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/projects" element={<Kanban />} />
           <Route path="/projects/:id" element={<ScriptEditor />} />
-          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/expenses" element={<AdminLock label="Expenses"><Expenses /></AdminLock>} />
           <Route path="/saved" element={<Saved />} />
           <Route path="/saved/:id" element={<NoteEditor />} />
           <Route path="/checklist" element={<Checklist />} />

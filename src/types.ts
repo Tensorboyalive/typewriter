@@ -264,6 +264,28 @@ export interface ChecklistTemplate {
   created_at: string
 }
 
+// ─── Time Blocks (Today view) ───────────────────────────
+export type Persona = 'you' | 'pa'
+
+export const PERSONAS: { id: Persona; label: string }[] = [
+  { id: 'you', label: 'You' },
+  { id: 'pa', label: 'PA' },
+]
+
+export interface TimeBlock {
+  id: string
+  user_id: string
+  persona: Persona
+  date: string            // YYYY-MM-DD local
+  start_min: number       // minutes from 00:00
+  end_min: number
+  label: string | null
+  project_id: string | null
+  checklist_item_id: string | null
+  is_mit: boolean
+  created_at: string
+}
+
 // ─── Editor Output ──────────────────────────────────────
 export interface EditorOutput {
   id: string

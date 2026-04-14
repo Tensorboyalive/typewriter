@@ -6,7 +6,14 @@ import { supabase } from './lib/supabase'
 // Local-time YYYY-MM-DD. Do NOT use toISOString().split('T')[0] — that's UTC,
 // which breaks the checklist "today" filter for any user outside UTC.
 const localDateKey = (d: Date = new Date()) => format(d, 'yyyy-MM-dd')
-import type { Channel, Project, Expense, Income, TimerSession, Note, ChecklistItem, UserRole, Profile, ChecklistTemplate, EditorOutput } from './types'
+import type { Channel, Project, Expense, Income, TimerSession, Note, ChecklistItem, UserRole, Profile, ChecklistTemplate, EditorOutput, TimeBlock, Persona } from './types'
+
+const PERSONA_KEY = 'tw-persona'
+const readPersona = (): Persona => {
+  if (typeof window === 'undefined') return 'you'
+  const v = localStorage.getItem(PERSONA_KEY)
+  return v === 'pa' ? 'pa' : 'you'
+}
 
 interface TeamMemberWithProfile {
   id: string
@@ -87,6 +94,18 @@ interface StoreContextType {
 
   setConversionRate: (rate: number) => Promise<void>
   exportAllData: () => Promise<object>
+
+  // Persona (app-level — you vs PA sharing one login)
+  persona: Persona
+  setPersona: (p: Persona) => void
+
+  // Time blocks (Today view)
+  timeBlocks: TimeBlock[]
+  fetchTimeBlocks: (date: string) => Promise<void>
+  addTimeBlock: (b: { date: string; start_min: number; end_min: number; label?: string | null; project_id?: string | null; checklist_item_id?: string | null; is_mit?: boolean }) => Promise<TimeBlock | null>
+  updateTimeBlock: (id: string, updates: Partial<TimeBlock>) => Promise<void>
+  deleteTimeBlock: (id: string) => Promise<void>
+  setMIT: (date: string, ref: { project_id?: string | null; checklist_item_id?: string | null; label?: string | null }) => Promise<void>
 }
 
 const StoreContext = createContext<StoreContextType>(null!)
@@ -113,6 +132,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([])
   const [checklistTemplates, setChecklistTemplates] = useState<ChecklistTemplate[]>([])
 
+  const [persona, setPersonaState] = useState<Persona>(readPersona)
+  const [timeBlocks, setTimeBlocks] = useState<TimeBlock[]>([])
   const [conversionRate, setConversionRateState] = useState(84)
   const [dataLoading, setDataLoading] = useState(true)
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithProfile[]>([])
@@ -233,7 +254,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       // Channel-scoped
       supabase.from('projects').select('*').eq('channel_id', channelId).is('archived_at', null).order('created_at', { ascending: false }),
       supabase.from('timer_sessions').select('*').eq('channel_id', channelId).is('archived_at', null).order('completed_at', { ascending: false }),
-      supabase.from('editor_outputs').select('*').eq('channel_id', channelId).order('date', { ascending: false }).limit(50),
+      supabase.from('editor_outputs').select('*').in('channel_id', channelIds).order('date', { ascending: false }).limit(100),
       // User-scoped (unified)
       supabase.from('expenses').select('*').eq('user_id', user!.id).is('archived_at', null).order('date', { ascending: false }),
       supabase.from('income').select('*').eq('user_id', user!.id).is('archived_at', null).order('date', { ascending: false }),
@@ -447,14 +468,81 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   const fetchEditorOutputs = async () => {
-    if (!activeChannelId) return
-    const { data } = await supabase.from('editor_outputs').select('*').eq('channel_id', activeChannelId).order('date', { ascending: false }).limit(50)
+    if (channels.length === 0) return
+    const channelIds = channels.map(c => c.id)
+    const { data } = await supabase.from('editor_outputs').select('*').in('channel_id', channelIds).order('date', { ascending: false }).limit(100)
     if (data) setEditorOutputs(data)
   }
 
   const setConversionRate = async (rate: number) => {
     setConversionRateState(rate)
     await supabase.from('user_settings').update({ conversion_rate: rate, updated_at: new Date().toISOString() }).eq('user_id', user!.id)
+  }
+
+  const setPersona = (p: Persona) => {
+    localStorage.setItem(PERSONA_KEY, p)
+    setPersonaState(p)
+  }
+
+  const fetchTimeBlocks = async (date: string) => {
+    if (!user) return
+    const { data } = await supabase.from('time_blocks').select('*')
+      .eq('user_id', user.id).eq('date', date).order('start_min')
+    setTimeBlocks((data ?? []) as TimeBlock[])
+  }
+
+  const addTimeBlock = async (b: { date: string; start_min: number; end_min: number; label?: string | null; project_id?: string | null; checklist_item_id?: string | null; is_mit?: boolean }) => {
+    if (!user) return null
+    const { data, error } = await supabase.from('time_blocks').insert({
+      user_id: user.id,
+      persona,
+      date: b.date,
+      start_min: b.start_min,
+      end_min: b.end_min,
+      label: b.label ?? null,
+      project_id: b.project_id ?? null,
+      checklist_item_id: b.checklist_item_id ?? null,
+      is_mit: b.is_mit ?? false,
+    }).select().single()
+    if (!error && data) {
+      setTimeBlocks(prev => [...prev, data as TimeBlock].sort((a, b) => a.start_min - b.start_min))
+      return data as TimeBlock
+    }
+    return null
+  }
+
+  const updateTimeBlock = async (id: string, updates: Partial<TimeBlock>) => {
+    const { error } = await supabase.from('time_blocks').update(updates).eq('id', id)
+    if (!error) setTimeBlocks(prev => prev.map(b => (b.id === id ? { ...b, ...updates } as TimeBlock : b)))
+  }
+
+  const deleteTimeBlock = async (id: string) => {
+    const { error } = await supabase.from('time_blocks').delete().eq('id', id)
+    if (!error) setTimeBlocks(prev => prev.filter(b => b.id !== id))
+  }
+
+  // MIT is a distinguished row per persona per date. Setting MIT clears any
+  // previous MIT for (persona, date) and creates a new pinned block at the top
+  // of the day (9am default, 60 min) — user can drag/edit after.
+  const setMIT = async (date: string, ref: { project_id?: string | null; checklist_item_id?: string | null; label?: string | null }) => {
+    if (!user) return
+    // Clear existing MIT for this persona+date
+    const existing = timeBlocks.filter(b => b.is_mit && b.date === date && b.persona === persona)
+    for (const b of existing) {
+      await supabase.from('time_blocks').update({ is_mit: false }).eq('id', b.id)
+    }
+    setTimeBlocks(prev => prev.map(b =>
+      b.is_mit && b.date === date && b.persona === persona ? { ...b, is_mit: false } : b
+    ))
+    await addTimeBlock({
+      date,
+      start_min: 9 * 60,
+      end_min: 10 * 60,
+      label: ref.label ?? null,
+      project_id: ref.project_id ?? null,
+      checklist_item_id: ref.checklist_item_id ?? null,
+      is_mit: true,
+    })
   }
 
   const exportAllData = async () => {
@@ -496,6 +584,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addChecklistTemplate, updateChecklistTemplate, deleteChecklistTemplate, applyDailyTemplate,
       addEditorOutput, updateEditorOutput, deleteEditorOutput, fetchEditorOutputs,
       setConversionRate, exportAllData,
+      persona, setPersona,
+      timeBlocks, fetchTimeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, setMIT,
     }}>
       {children}
     </StoreContext.Provider>
