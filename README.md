@@ -1,73 +1,90 @@
-# React + TypeScript + Vite
+# Typewriter
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A multi-channel content-ops dashboard for one person running many voices.
+Built by [Manu Gupta](https://github.com/Tensorboyalive) for `tensorboy`, `tmg`,
+`savvy`, and `data` — two admins, one login, four personas.
 
-Currently, two official plugins are available:
+Stack: **React 19 · TypeScript · Vite · Tailwind v4 · Supabase · Vercel**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## What it does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Content pipeline** — Kanban + Calendar for reels, carousels, text posts, across all four channels.
+- **Scripts & notes** — a fast editor with autosave, per-note pins, channel-scoped filtering.
+- **Today** — time-blocked planner, MIT picker, drag-to-reschedule.
+- **Checklist** — recurring daily templates, per-category grouping, skip reasons.
+- **Finances** — expenses, income, conversion-rate tracking, export.
+- **Editor outputs** — per-day record of what was shipped and by whom.
+- **Music** — embedded YouTube radios (Manu's mixes + ambient streams) with a single hotkey (`M`).
+- **Streaks** — a quiet flame tracking 36h-grace consecutive activity, per persona.
+- **Admin lock** — 4-digit passcode wall for sensitive surfaces (finances, settings, deals).
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Quickstart
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install         # or npm / yarn
+cp .env.example .env # fill in Supabase URL + anon key + admin passcode
+pnpm dev             # http://localhost:5173
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Required env vars (see `.env.example`):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Variable | Purpose |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase project URL |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key |
+| `VITE_ADMIN_PASSCODE` | 4-digit passcode for admin-locked routes |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Scripts
+
+| Command | What it does |
+|---|---|
+| `pnpm dev` | Vite dev server with HMR |
+| `pnpm build` | `tsc -b && vite build` — type-checks then bundles to `dist/` |
+| `pnpm lint` | ESLint across `src/` |
+| `pnpm preview` | Serve the production build locally |
+
+---
+
+## Project layout
+
 ```
+src/
+├── components/      # UI, organized by surface (Dashboard, Today, Kanban, ...)
+├── lib/             # Pure utilities (streaks, toast, stations, theme hooks)
+├── store.tsx        # Zustand-style global store wrapping Supabase
+├── types.ts         # Shared domain types
+├── index.css        # Design tokens + motion system (see docs/MICRO-INTERACTIONS.md)
+└── App.tsx          # Route tree + global providers (Toast, FetchErrorBanner)
+
+supabase/
+├── config.toml
+└── migrations/      # Ordered SQL migrations (001 → 018)
+
+docs/
+├── ARCHITECTURE.md  # How the pieces fit together
+├── DATABASE.md      # Schema + RLS overview
+├── DEPLOY.md        # Vercel + Supabase deployment notes
+├── MICRO-INTERACTIONS.md  # Motion tokens, utility classes, principles
+└── plans/           # Design docs for shipped work
+```
+
+---
+
+## Further reading
+
+- [Architecture overview](./docs/ARCHITECTURE.md) — routing, data flow, store layout
+- [Database & migrations](./docs/DATABASE.md) — tables, RLS, how to add a migration
+- [Deployment](./docs/DEPLOY.md) — Vercel config, Supabase setup, env vars
+- [Micro-interactions](./docs/MICRO-INTERACTIONS.md) — the motion system
+
+---
+
+## License
+
+Private. All rights reserved © Manu Gupta.

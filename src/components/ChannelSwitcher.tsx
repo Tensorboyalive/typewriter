@@ -43,7 +43,7 @@ export function ChannelSwitcher({ canManage = true }: { canManage?: boolean }) {
           <p className="font-medium truncate">{activeChannel.name}</p>
           {activeChannel.handle && <p className="text-[10px] text-ink-muted truncate">{activeChannel.handle}</p>}
         </div>
-        <ChevronDown size={14} className={`text-ink-muted transition-transform ${open ? 'rotate-180' : ''}`} />
+        <ChevronDown size={14} className={`chev-toggle text-ink-muted ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open && (

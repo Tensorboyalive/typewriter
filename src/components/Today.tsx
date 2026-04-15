@@ -385,7 +385,7 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData(DRAG_MIME, `${block.id}|${block.end_min - block.start_min}`)
       }}
-      className={`card-hover sheet-in absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
+      className={`card-hover sheet-in cursor-grab active:cursor-grabbing absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
         block.is_mit
           ? 'bg-blueprint text-white border-blueprint-dark'
           : 'bg-surface border-line hover:border-blueprint'
@@ -476,7 +476,7 @@ function TrayPanel({ checklist, projects, onAssign, open, onToggle }: {
           className="px-4 py-2 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-ink-muted"
         >
           <span>Unscheduled ({checklist.length + projects.length})</span>
-          <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={14} className={`chev-toggle ${open ? 'rotate-180' : ''}`} />
         </button>
         {open && (
           <div className="overflow-auto p-2 space-y-1 border-t border-line-light">

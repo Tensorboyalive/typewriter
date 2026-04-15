@@ -16,6 +16,7 @@ import { Plus, ArrowRight, CheckSquare, BookOpen, CalendarClock, TrendingUp, Tre
 import { useStore } from '../store'
 import { AdminLock } from './AdminLock'
 import { STATUSES, CONTENT_FORMATS } from '../types'
+import { Ticker } from './Ticker'
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -116,12 +117,12 @@ export function Dashboard() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         <div className="card-hover stagger-in bg-surface border border-line rounded-lg p-5">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Posted Today</p>
-          <p className="text-3xl font-light text-ink tabular-nums">{postedToday}</p>
+          <Ticker value={postedToday} className="text-3xl font-light text-ink tabular-nums block" />
           <p className="text-[10px] text-ink-muted mt-1">across all channels</p>
         </div>
         <button onClick={() => navigate('/checklist')} className="card-hover stagger-in bg-surface border border-line rounded-lg p-5 text-left hover:shadow-sm transition-shadow">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Today's Checklist</p>
-          <p className="text-3xl font-light text-ink tabular-nums">{checklistPct}%</p>
+          <Ticker value={checklistPct} format={n => `${n}%`} className="text-3xl font-light text-ink tabular-nums block" />
           <div className="h-1.5 bg-canvas rounded-full overflow-hidden mt-2">
             <div className="h-full bg-success rounded-full transition-all" style={{ width: `${checklistPct}%` }} />
           </div>
@@ -129,7 +130,7 @@ export function Dashboard() {
         </button>
         <div className="card-hover stagger-in bg-surface border border-line rounded-lg p-5">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Total Pipeline</p>
-          <p className="text-3xl font-light text-blueprint tabular-nums">{totalProjects}</p>
+          <Ticker value={totalProjects} className="text-3xl font-light text-blueprint tabular-nums block" />
           <p className="text-[10px] text-ink-muted mt-1">active projects</p>
         </div>
       </div>
