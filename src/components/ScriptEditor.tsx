@@ -1,15 +1,31 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Trash2, CalendarClock, Radio } from 'lucide-react'
+import { ArrowLeft, Trash2, CalendarClock, Radio, FileDown, Edit3, Eye } from 'lucide-react'
 import { useStore } from '../store'
 import { CONTENT_FORMATS, STATUSES, type ProjectStatus, type ContentFormat } from '../types'
 import { Select } from './Select'
 import { Timer } from './Timer'
+import { LinkifiedText } from './LinkifiedText'
+import { exportScriptToPdf } from '../lib/exportPdf'
 
 export function ScriptEditor() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { projects, updateProject, deleteProject, channels, switchChannel } = useStore()
   const project = projects.find(p => p.id === id)
+
+  const [mode, setMode] = useState<'edit' | 'read'>('edit')
+  const [exporting, setExporting] = useState(false)
+
+  const handleDownloadPdf = async () => {
+    if (!project) return
+    setExporting(true)
+    try {
+      await exportScriptToPdf(project)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (!project) {
     return (
@@ -89,6 +105,41 @@ export function ScriptEditor() {
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <Timer />
+          {/* Edit/Read pill — same shape as the Kanban List/Board toggle */}
+          <div className="flex items-center rounded-md border border-line bg-canvas p-0.5">
+            <button
+              type="button"
+              onClick={() => setMode('edit')}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
+                mode === 'edit'
+                  ? 'bg-blueprint text-white'
+                  : 'text-ink-muted hover:bg-canvas'
+              }`}
+              aria-pressed={mode === 'edit'}
+            >
+              <Edit3 size={12} /> Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('read')}
+              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
+                mode === 'read'
+                  ? 'bg-blueprint text-white'
+                  : 'text-ink-muted hover:bg-canvas'
+              }`}
+              aria-pressed={mode === 'read'}
+            >
+              <Eye size={12} /> Read
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={handleDownloadPdf}
+            disabled={exporting}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line text-[12px] text-ink-secondary hover:text-blueprint hover:border-blueprint/40 transition-colors disabled:opacity-50"
+          >
+            <FileDown size={14} /> {exporting ? 'Exporting…' : 'Download PDF'}
+          </button>
           <button
             onClick={() => {
               deleteProject(project.id)
@@ -157,12 +208,22 @@ export function ScriptEditor() {
       {/* Script editor — fills remaining viewport */}
       <div className="flex-1 overflow-auto">
         <div className="max-w-4xl mx-auto px-8 py-10 h-full">
-          <textarea
-            value={project.script}
-            onChange={e => updateProject(project.id, { script: e.target.value })}
-            placeholder={`Start writing your script here...\n\nThink about:\n\u2022 Hook — First 3 seconds\n\u2022 Story — The main content\n\u2022 CTA — What should they do?`}
-            className="w-full h-full min-h-[60vh] bg-transparent text-ink leading-relaxed resize-none focus:outline-none text-[16px]"
-          />
+          {mode === 'edit' ? (
+            <textarea
+              value={project.script}
+              onChange={e => updateProject(project.id, { script: e.target.value })}
+              placeholder={`Start writing your script here...\n\nThink about:\n\u2022 Hook — First 3 seconds\n\u2022 Story — The main content\n\u2022 CTA — What should they do?`}
+              className="w-full h-full min-h-[60vh] bg-transparent text-ink leading-relaxed resize-none focus:outline-none text-[16px]"
+            />
+          ) : (
+            <div className="w-full min-h-[60vh] text-ink leading-relaxed text-[16px]">
+              {project.script.trim() ? (
+                <LinkifiedText text={project.script} />
+              ) : (
+                <p className="text-ink-muted italic">Nothing written yet.</p>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>
