@@ -90,7 +90,7 @@ export function MusicPlayer() {
         <iframe
           key={iframeKey}
           title={`music-${station.id}`}
-          src={stationEmbedUrl(station.videoId)}
+          src={stationEmbedUrl(station)}
           allow="autoplay; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
@@ -140,7 +140,7 @@ export function MusicPlayer() {
                 <iframe
                   key={iframeKey}
                   title={`music-video-${station.id}`}
-                  src={stationEmbedUrl(station.videoId)}
+                  src={stationEmbedUrl(station)}
                   allow="autoplay; encrypted-media; picture-in-picture"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen

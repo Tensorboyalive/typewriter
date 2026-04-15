@@ -200,8 +200,8 @@ export function Checklist() {
               const Icon = STATUS_ICONS[item.status as ChecklistStatus]
               const color = STATUS_COLORS[item.status as ChecklistStatus]
               return (
-                <div key={item.id} className="flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group hover:shadow-sm transition-shadow">
-                  <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={`${color} hover:opacity-70 transition-opacity`}>
+                <div key={item.id} className="card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group hover:shadow-sm transition-shadow">
+                  <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={`${color} hover:opacity-70 transition-opacity ${item.status === 'done' ? 'tick-pop' : ''}`}>
                     <Icon size={18} />
                   </button>
                   <span className={`flex-1 text-sm ${item.status === 'done' ? 'line-through text-ink-muted' : 'text-ink'}`}>
@@ -225,8 +225,8 @@ export function Checklist() {
             const Icon = STATUS_ICONS[item.status as ChecklistStatus]
             const color = STATUS_COLORS[item.status as ChecklistStatus]
             return (
-              <div key={item.id} className="flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group">
-                <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={color}>
+              <div key={item.id} className="card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group">
+                <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={`${color} ${item.status === 'done' ? 'tick-pop' : ''}`}>
                   <Icon size={18} />
                 </button>
                 <span className={`flex-1 text-sm ${item.status === 'done' ? 'line-through text-ink-muted' : 'text-ink'}`}>{item.title}</span>

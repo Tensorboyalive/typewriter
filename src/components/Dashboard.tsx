@@ -114,12 +114,12 @@ export function Dashboard() {
 
       {/* Top metrics: Posted today + Checklist + Pipeline total */}
       <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="bg-surface border border-line rounded-lg p-5">
+        <div className="card-hover stagger-in bg-surface border border-line rounded-lg p-5">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Posted Today</p>
           <p className="text-3xl font-light text-ink tabular-nums">{postedToday}</p>
           <p className="text-[10px] text-ink-muted mt-1">across all channels</p>
         </div>
-        <button onClick={() => navigate('/checklist')} className="bg-surface border border-line rounded-lg p-5 text-left hover:shadow-sm transition-shadow">
+        <button onClick={() => navigate('/checklist')} className="card-hover stagger-in bg-surface border border-line rounded-lg p-5 text-left hover:shadow-sm transition-shadow">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Today's Checklist</p>
           <p className="text-3xl font-light text-ink tabular-nums">{checklistPct}%</p>
           <div className="h-1.5 bg-canvas rounded-full overflow-hidden mt-2">
@@ -127,7 +127,7 @@ export function Dashboard() {
           </div>
           <p className="text-[10px] text-ink-muted mt-1">{checklistDone}/{checklistTotal} tasks</p>
         </button>
-        <div className="bg-surface border border-line rounded-lg p-5">
+        <div className="card-hover stagger-in bg-surface border border-line rounded-lg p-5">
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Total Pipeline</p>
           <p className="text-3xl font-light text-blueprint tabular-nums">{totalProjects}</p>
           <p className="text-[10px] text-ink-muted mt-1">active projects</p>
@@ -135,7 +135,7 @@ export function Dashboard() {
       </div>
 
       {/* This week — a quiet pat on the back */}
-      <div className="bg-surface border border-line rounded-lg p-5 mb-6">
+      <div className="card-hover bg-surface border border-line rounded-lg p-5 mb-6">
         <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-4">This Week</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>

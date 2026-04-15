@@ -107,7 +107,7 @@ export function Saved() {
               <div
                 key={note.id}
                 onClick={() => navigate(`/saved/${note.id}`)}
-                className={`flex items-center gap-3 bg-surface border rounded-md px-4 py-3 cursor-pointer group transition-all hover:shadow-sm hover:border-blueprint/40 ${
+                className={`card-hover stagger-in flex items-center gap-3 bg-surface border rounded-md px-4 py-3 cursor-pointer group transition-all hover:shadow-sm hover:border-blueprint/40 ${
                   note.pinned ? 'border-blueprint/30' : 'border-line'
                 }`}
               >

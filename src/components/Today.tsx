@@ -385,7 +385,7 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData(DRAG_MIME, `${block.id}|${block.end_min - block.start_min}`)
       }}
-      className={`absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
+      className={`card-hover sheet-in absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
         block.is_mit
           ? 'bg-blueprint text-white border-blueprint-dark'
           : 'bg-surface border-line hover:border-blueprint'
@@ -521,7 +521,7 @@ function AddBlockModal({ state, projects, checklist, onClose, onSubmit }: {
 
   return (
     <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-sm bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
+      <div className="sheet-in w-full max-w-sm bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
         <p className="text-[11px] uppercase tracking-[0.2em] text-ink-muted mb-1">Add block</p>
         <p className="text-sm text-ink mb-3">{minToLabel(state.start_min)} – {minToLabel(state.end_min)}</p>
 
@@ -572,7 +572,7 @@ function MITPickerModal({ checklist, projects, onClose, onPick }: {
 
   return (
     <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="w-full max-w-md bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
+      <div className="sheet-in w-full max-w-md bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
         <div className="flex items-center gap-2 mb-3">
           <Pin size={14} className="text-blueprint" />
           <p className="text-sm font-medium text-ink">Pin your MIT</p>
