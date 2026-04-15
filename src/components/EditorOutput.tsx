@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { format, addDays, subDays } from 'date-fns'
 import { Plus, ChevronLeft, ChevronRight, ExternalLink, Trash2, X, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
+import { LinkifiedText } from './LinkifiedText'
 
 const safeHref = (url?: string | null): string | undefined => {
   if (!url) return undefined
@@ -171,7 +172,9 @@ export function EditorOutput() {
             {outputs.map(output => (
               <div key={output.id} className="flex items-start gap-3 bg-surface border border-line rounded-md px-4 py-3 group relative">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink pr-14">{output.description}</p>
+                  <p className="text-sm text-ink pr-14">
+                    <LinkifiedText text={output.description} preserveWhitespace={false} />
+                  </p>
                   <p className="text-[10px] text-ink-muted mt-0.5">
                     {format(new Date(output.created_at), 'h:mm a')}
                   </p>
