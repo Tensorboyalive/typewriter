@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns'
-import { Plus, Trash2, TrendingUp, TrendingDown, ArrowUpDown, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, Trash2, TrendingUp, TrendingDown, ArrowUpDown, Calendar as CalendarIcon, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { EXPENSE_CATEGORIES, INCOME_SOURCES } from '../types'
 import { Select } from './Select'
@@ -12,6 +12,7 @@ export function Expenses() {
   } = useStore()
 
   const [formMode, setFormMode] = useState<'expense' | 'income' | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const [expDesc, setExpDesc] = useState('')
   const [expAmount, setExpAmount] = useState('')
@@ -379,14 +380,18 @@ export function Expenses() {
                   </td>
                   <td className="p-3">
                     <button
-                      onClick={() => {
-                        entry.kind === 'expense'
-                          ? deleteExpense(entry.id)
-                          : deleteIncome(entry.id)
+                      onClick={async () => {
+                        setDeletingId(entry.id)
+                        try {
+                          if (entry.kind === 'expense') await deleteExpense(entry.id)
+                          else await deleteIncome(entry.id)
+                          setDeletingId(null)
+                        } catch { setDeletingId(null) }
                       }}
-                      className="text-ink-muted hover:text-danger transition-colors"
+                      disabled={deletingId === entry.id}
+                      className="text-ink-muted hover:text-danger transition-colors disabled:opacity-100"
                     >
-                      <Trash2 size={14} />
+                      {deletingId === entry.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>
                   </td>
                 </tr>

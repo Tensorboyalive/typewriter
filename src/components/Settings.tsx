@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { UserCog, Users, Hash, Trash2, Plus, Save, ListChecks } from 'lucide-react'
+import { UserCog, Users, Hash, Trash2, Plus, Save, ListChecks, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
 import { CHECKLIST_CATEGORIES, type ChecklistCategory } from '../types'
@@ -131,9 +131,15 @@ export function Settings() {
     setInviting(false)
   }
 
+  const [deletingMemberId, setDeletingMemberId] = useState<string | null>(null)
+
   const handleRemoveMember = async (memberId: string) => {
-    await supabase.from('team_members').delete().eq('id', memberId)
-    setTeamMembers(prev => prev.filter(m => m.id !== memberId))
+    setDeletingMemberId(memberId)
+    try {
+      await supabase.from('team_members').delete().eq('id', memberId)
+      setTeamMembers(prev => prev.filter(m => m.id !== memberId))
+      setDeletingMemberId(null)
+    } catch { setDeletingMemberId(null) }
   }
 
   const handleChangeRole = async (memberId: string, newRole: UserRole) => {
@@ -294,9 +300,10 @@ export function Settings() {
                       </select>
                       <button
                         onClick={() => handleRemoveMember(member.id)}
-                        className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light transition-colors"
+                        disabled={deletingMemberId === member.id}
+                        className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light transition-colors disabled:opacity-100"
                       >
-                        <Trash2 size={14} />
+                        {deletingMemberId === member.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                       </button>
                     </div>
                   ) : (

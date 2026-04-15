@@ -108,7 +108,7 @@ export function Calendar() {
               key={day.toISOString()}
               onClick={() => setSelectedDate(day)}
               className={`min-h-28 p-2 border-r border-b border-line cursor-pointer transition-colors
-                ${!inMonth ? 'bg-canvas/60 text-ink-muted' : weekend ? 'bg-canvas/60 hover:bg-blueprint-light/20' : 'bg-surface hover:bg-blueprint-light/20'}
+                ${!inMonth ? 'bg-ink/[0.04] dark:bg-ink/[0.08] text-ink-muted' : weekend ? 'bg-ink/[0.04] dark:bg-ink/[0.08] hover:bg-blueprint-light/20' : 'bg-surface hover:bg-blueprint-light/20'}
                 ${selected ? 'ring-2 ring-blueprint ring-inset' : ''}`}
             >
               <span

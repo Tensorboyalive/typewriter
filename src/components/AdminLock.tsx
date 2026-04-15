@@ -4,7 +4,7 @@ import { Lock } from 'lucide-react'
 // Simple app-level passcode gate. Both admins share one login, so this is a
 // soft barrier on sensitive surfaces (Finances, Expenses) — NOT a security
 // boundary. The real data is still protected by Supabase RLS.
-const PASSCODE = '1613'
+const PASSCODE = import.meta.env.VITE_ADMIN_PASSCODE || '1613'  // fallback only for dev
 const STORAGE_KEY = 'tw-admin-unlock'
 const EVT = 'tw-admin-unlock-change'
 

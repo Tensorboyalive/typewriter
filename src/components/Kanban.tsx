@@ -218,24 +218,26 @@ export function Kanban() {
 
       {/* ─── BOARD VIEW ─────────────────────────────────── */}
       {viewMode === 'board' && (
-        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${STATUSES.length}, minmax(0, 1fr))` }}>
-          {STATUSES.map(status => {
-            const items = filtered.filter(p => p.status === status.id)
-            return (
-              <div key={status.id} className="min-w-0">
-                <div className="flex items-center gap-1.5 mb-2 px-1">
-                  <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted truncate">{status.label}</p>
-                  <span className="text-[10px] bg-canvas text-ink-muted px-1.5 py-0.5 rounded-full shrink-0">{items.length}</span>
+        <div className="overflow-x-auto -mx-2 px-2">
+          <div className="grid gap-3 min-w-max" style={{ gridTemplateColumns: `repeat(${STATUSES.length}, minmax(180px, 1fr))` }}>
+            {STATUSES.map(status => {
+              const items = filtered.filter(p => p.status === status.id)
+              return (
+                <div key={status.id} className="min-w-0">
+                  <div className="flex items-center gap-1.5 mb-2 px-1">
+                    <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted truncate">{status.label}</p>
+                    <span className="text-[10px] bg-canvas text-ink-muted px-1.5 py-0.5 rounded-full shrink-0">{items.length}</span>
+                  </div>
+                  <div className="space-y-2 bg-ink/[0.04] dark:bg-ink/[0.08] rounded-lg p-1.5 min-h-[200px]">
+                    {items.map(project => renderProjectCard(project, true))}
+                    {items.length === 0 && (
+                      <p className="text-[10px] text-ink-muted text-center py-8 italic">Empty</p>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2 bg-canvas/50 rounded-lg p-1.5 min-h-[200px]">
-                  {items.map(project => renderProjectCard(project, true))}
-                  {items.length === 0 && (
-                    <p className="text-[10px] text-ink-muted text-center py-8 italic">Empty</p>
-                  )}
-                </div>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       )}
 

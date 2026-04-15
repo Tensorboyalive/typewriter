@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Pin, PinOff, Trash2, Search } from 'lucide-react'
+import { Plus, Pin, PinOff, Trash2, Search, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { NOTE_LABELS, type NoteLabel } from '../types'
 
@@ -10,6 +10,7 @@ export function Saved() {
 
   const [filter, setFilter] = useState<NoteLabel | 'all'>('all')
   const [search, setSearch] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const handleNewNote = async () => {
     const note = await addNote({ title: '', content: '', label: 'Idea' })
@@ -142,13 +143,18 @@ export function Saved() {
                     {note.pinned ? <PinOff size={14} /> : <Pin size={14} />}
                   </button>
                   <button
-                    onClick={e => {
+                    onClick={async e => {
                       e.stopPropagation()
-                      deleteNote(note.id)
+                      setDeletingId(note.id)
+                      try {
+                        await deleteNote(note.id)
+                        setDeletingId(null)
+                      } catch { setDeletingId(null) }
                     }}
-                    className="p-1.5 rounded text-ink-muted hover:text-danger"
+                    disabled={deletingId === note.id}
+                    className="p-1.5 rounded text-ink-muted hover:text-danger disabled:opacity-100"
                   >
-                    <Trash2 size={14} />
+                    {deletingId === note.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                   </button>
                 </div>
               </div>

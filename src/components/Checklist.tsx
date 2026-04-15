@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { format, addDays, subDays } from 'date-fns'
-import { Plus, ChevronLeft, ChevronRight, Circle, CheckCircle2, MinusCircle, AlertCircle, X, Wand2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Circle, CheckCircle2, MinusCircle, AlertCircle, X, Wand2, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { CHECKLIST_CATEGORIES, type ChecklistCategory, type ChecklistStatus } from '../types'
 import { supabase } from '../lib/supabase'
@@ -75,12 +75,20 @@ export function Checklist() {
     }
   }
 
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
   const handleDelete = async (id: string) => {
-    if (isToday) {
-      await deleteChecklistItem(id)
-    } else {
-      await supabase.from('checklist_items').update({ archived_at: new Date().toISOString() }).eq('id', id)
-      fetchForDate(date)
+    setDeletingId(id)
+    try {
+      if (isToday) {
+        await deleteChecklistItem(id)
+      } else {
+        await supabase.from('checklist_items').update({ archived_at: new Date().toISOString() }).eq('id', id)
+        fetchForDate(date)
+      }
+      setDeletingId(null)
+    } catch {
+      setDeletingId(null)
     }
   }
 
@@ -200,8 +208,8 @@ export function Checklist() {
                     {item.title}
                   </span>
                   {item.skip_reason && <span className="text-[10px] text-warning">{item.skip_reason}</span>}
-                  <button onClick={() => handleDelete(item.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger transition-all">
-                    <X size={14} />
+                  <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger transition-all disabled:opacity-100">
+                    {deletingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                   </button>
                 </div>
               )
@@ -222,8 +230,8 @@ export function Checklist() {
                   <Icon size={18} />
                 </button>
                 <span className={`flex-1 text-sm ${item.status === 'done' ? 'line-through text-ink-muted' : 'text-ink'}`}>{item.title}</span>
-                <button onClick={() => handleDelete(item.id)} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger">
-                  <X size={14} />
+                <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger disabled:opacity-100">
+                  {deletingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
                 </button>
               </div>
             )

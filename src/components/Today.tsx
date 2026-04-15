@@ -49,6 +49,7 @@ export function Today() {
   })
   const [addModal, setAddModal] = useState<AddModalState | null>(null)
   const [mitPicker, setMitPicker] = useState(false)
+  const [trayOpen, setTrayOpen] = useState(true)
   const railRef = useRef<HTMLDivElement>(null)
 
   // Refetch when date or persona changes
@@ -164,7 +165,7 @@ export function Today() {
       {/* Body: rail + tray */}
       <div className="flex-1 flex overflow-hidden">
         {/* Hourly rail — scrollable container keeps the header put */}
-        <div ref={railRef} className="flex-1 overflow-auto relative">
+        <div ref={railRef} className={`flex-1 overflow-auto relative md:pb-0 ${trayOpen ? 'pb-[55vh]' : 'pb-16'}`}>
           <div
             className="relative"
             style={{ height: (END_HOUR - START_HOUR) * HOUR_PX }}
@@ -206,6 +207,8 @@ export function Today() {
         </div>
 
         <TrayPanel
+          open={trayOpen}
+          onToggle={() => setTrayOpen(o => !o)}
           checklist={trayChecklist}
           projects={trayProjects}
           onAssign={async (kind, item) => {
@@ -263,13 +266,32 @@ function MITSlot({ mit, onPick, onClear, onOpen, projects, checklist }: {
   checklist: ChecklistItem[]
 }) {
   let title: string | null = null
+  let isDone = false
   if (mit) {
-    if (mit.project_id) title = projects.find(p => p.id === mit.project_id)?.title ?? mit.label
-    else if (mit.checklist_item_id) title = checklist.find(c => c.id === mit.checklist_item_id)?.title ?? mit.label
+    if (mit.project_id) {
+      const p = projects.find(p => p.id === mit.project_id)
+      title = p?.title ?? mit.label
+      isDone = p?.status === 'posted'
+    }
+    else if (mit.checklist_item_id) {
+      const c = checklist.find(c => c.id === mit.checklist_item_id)
+      title = c?.title ?? mit.label
+      isDone = c?.status === 'done'
+    }
     else title = mit.label
   }
+  const [pulse, setPulse] = useState(false)
+  const prevDone = useRef(isDone)
+  useEffect(() => {
+    if (isDone && !prevDone.current) {
+      setPulse(true)
+      const t = setTimeout(() => setPulse(false), 220)
+      return () => clearTimeout(t)
+    }
+    prevDone.current = isDone
+  }, [isDone])
   return (
-    <div className="mt-3 flex items-center gap-3 p-3 rounded-lg border border-blueprint/30 bg-blueprint-light/30">
+    <div className={`mt-3 flex items-center gap-3 p-3 rounded-lg border border-blueprint/30 bg-blueprint-light/30 transition-transform duration-200 ${pulse ? 'scale-[1.03] bg-success/10' : ''}`}>
       <Target size={16} className="text-blueprint shrink-0" />
       {mit && title ? (
         <>
@@ -421,12 +443,13 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
   )
 }
 
-function TrayPanel({ checklist, projects, onAssign }: {
+function TrayPanel({ checklist, projects, onAssign, open, onToggle }: {
   checklist: ChecklistItem[]
   projects: Project[]
   onAssign: (kind: 'checklist' | 'project', item: ChecklistItem | Project) => void
+  open: boolean
+  onToggle: () => void
 }) {
-  const [open, setOpen] = useState(true)
   const empty = checklist.length === 0 && projects.length === 0
 
   return (
@@ -449,11 +472,11 @@ function TrayPanel({ checklist, projects, onAssign }: {
 
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-20 max-h-[50vh] flex flex-col">
         <button
-          onClick={() => setOpen(o => !o)}
+          onClick={onToggle}
           className="px-4 py-2 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-ink-muted"
         >
           <span>Unscheduled ({checklist.length + projects.length})</span>
-          <ChevronDown size={14} className={`transition-transform ${open ? '' : 'rotate-180'}`} />
+          <ChevronDown size={14} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
         {open && (
           <div className="overflow-auto p-2 space-y-1 border-t border-line-light">

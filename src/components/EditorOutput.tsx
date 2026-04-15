@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { format, addDays, subDays } from 'date-fns'
-import { Plus, ChevronLeft, ChevronRight, ExternalLink, Trash2, X } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, ExternalLink, Trash2, X, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
+
+const safeHref = (url?: string | null): string | undefined => {
+  if (!url) return undefined
+  try {
+    const { protocol } = new URL(url)
+    return protocol === 'https:' || protocol === 'http:' ? url : undefined
+  } catch { return undefined }
+}
 
 export function EditorOutput() {
   const { user, editorOutputs, addEditorOutput, deleteEditorOutput, teamMembers, channels, activeChannel } = useStore()
@@ -10,6 +18,7 @@ export function EditorOutput() {
   const [desc, setDesc] = useState('')
   const [link, setLink] = useState('')
   const [outputChannelId, setOutputChannelId] = useState<string>(activeChannel?.id ?? '')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // Short channel tag — first token or first 4 chars.
   const channelTag = (id: string) => {
@@ -51,7 +60,13 @@ export function EditorOutput() {
   }
 
   const handleDelete = async (id: string) => {
-    await deleteEditorOutput(id)
+    setDeletingId(id)
+    try {
+      await deleteEditorOutput(id)
+      setDeletingId(null)
+    } catch {
+      setDeletingId(null)
+    }
   }
 
   const getUserName = (userId: string) => {
@@ -168,23 +183,31 @@ export function EditorOutput() {
                   {channelTag(output.channel_id)}
                 </span>
                 <div className="flex items-center gap-2 shrink-0 mt-6">
-                  {output.live_link && (
-                    <a
-                      href={output.live_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1 text-[10px] text-blueprint hover:underline"
-                    >
-                      <ExternalLink size={12} /> Live
-                    </a>
-                  )}
+                  {output.live_link && (() => {
+                    const href = safeHref(output.live_link)
+                    return href ? (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1 text-[10px] text-blueprint hover:underline"
+                      >
+                        <ExternalLink size={12} /> Live
+                      </a>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[10px] text-ink-muted" title="Invalid or unsafe link">
+                        <ExternalLink size={12} /> Live
+                      </span>
+                    )
+                  })()}
                   {output.user_id === user?.id && (
                     <button
                       onClick={() => handleDelete(output.id)}
-                      className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light opacity-0 group-hover:opacity-100 transition-all"
+                      disabled={deletingId === output.id}
+                      className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light opacity-0 group-hover:opacity-100 transition-all disabled:opacity-100"
                     >
-                      <Trash2 size={14} />
+                      {deletingId === output.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                     </button>
                   )}
                 </div>

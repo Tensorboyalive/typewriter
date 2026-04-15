@@ -77,6 +77,25 @@ export function Dashboard() {
     }
   })
 
+  // This-week delight stats
+  const reelsShipped = allProjects.filter(p =>
+    p.status === 'posted' && p.format === 'reel' && p.posted_at &&
+    isWithinInterval(new Date(p.posted_at), { start: weekStart, end: weekEnd }),
+  ).length
+  const scriptsDrafted = allProjects.filter(p =>
+    p.status === 'scripted' && p.updated_at &&
+    isWithinInterval(new Date(p.updated_at), { start: weekStart, end: weekEnd }),
+  ).length
+  const tasksDone = checklistItems.filter(c =>
+    c.status === 'done' && c.completed_at &&
+    isWithinInterval(new Date(c.completed_at), { start: weekStart, end: weekEnd }),
+  ).length
+  const hoursFocused = Math.round(
+    allSessions
+      .filter(s => isWithinInterval(new Date(s.completed_at), { start: weekStart, end: weekEnd }))
+      .reduce((sum, s) => sum + s.duration / 3600, 0),
+  )
+
   // Upcoming deadlines across all channels
   const upcoming = allProjects
     .filter(p => p.deadline && p.status !== 'posted')
@@ -112,6 +131,29 @@ export function Dashboard() {
           <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Total Pipeline</p>
           <p className="text-3xl font-light text-blueprint tabular-nums">{totalProjects}</p>
           <p className="text-[10px] text-ink-muted mt-1">active projects</p>
+        </div>
+      </div>
+
+      {/* This week — a quiet pat on the back */}
+      <div className="bg-surface border border-line rounded-lg p-5 mb-6">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-4">This Week</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div>
+            <p className="text-2xl font-light text-ink tabular-nums">{reelsShipped}</p>
+            <p className="text-[11px] text-ink-muted">Reels shipped</p>
+          </div>
+          <div>
+            <p className="text-2xl font-light text-ink tabular-nums">{scriptsDrafted}</p>
+            <p className="text-[11px] text-ink-muted">Scripts drafted</p>
+          </div>
+          <div>
+            <p className="text-2xl font-light text-ink tabular-nums">{tasksDone}</p>
+            <p className="text-[11px] text-ink-muted">Tasks done</p>
+          </div>
+          <div>
+            <p className="text-2xl font-light text-ink tabular-nums">{hoursFocused}</p>
+            <p className="text-[11px] text-ink-muted">Hrs focused</p>
+          </div>
         </div>
       </div>
 

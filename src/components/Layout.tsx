@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock } from 'lucide-react'
-import { getDayOfYear } from 'date-fns'
+import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock, Flame } from 'lucide-react'
+import { getDayOfYear, format, subDays } from 'date-fns'
 import { useStore } from '../store'
 import { ChannelSwitcher } from './ChannelSwitcher'
 import { ThemeToggle } from './ThemeToggle'
 import { MusicPlayer } from './MusicPlayer'
 import { isUnlocked, lockAdmin } from './AdminLock'
+import { useStreak } from '../lib/useStreak'
 
 const NAV = [
   { to: '/', icon: Home, label: 'Dashboard' },
@@ -60,6 +61,53 @@ function useDailyQuote() {
     const idx = (getDayOfYear(new Date()) - 1) % QUOTES.length
     return QUOTES[idx]
   }, [])
+}
+
+function PulseCard() {
+  const { current, longest, byDay, persona } = useStreak()
+  const personaLabel = persona === 'pa' ? 'PA' : 'YOU'
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = subDays(new Date(), 29 - i)
+    const key = format(d, 'yyyy-MM-dd')
+    return { d, key, count: byDay[key] ?? 0 }
+  })
+  const dotClass = (count: number) => {
+    if (count === 0) return 'bg-ink/10'
+    if (count <= 2) return 'bg-blueprint/30'
+    if (count <= 5) return 'bg-blueprint/60'
+    return 'bg-blueprint'
+  }
+  const coldStart = current <= 1
+  return (
+    <div className="px-4 py-3 border-t border-line">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{personaLabel}</p>
+        <div className="group relative" title={`Longest: ${longest}d`}>
+          {coldStart ? (
+            <span className="text-[11px] text-ink-muted">Starting fresh</span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <Flame size={12} className="text-blueprint" />
+              <span className="text-blueprint font-medium text-[13px] tabular-nums">{current}</span>
+              <span className="text-[11px] text-ink-muted">d streak</span>
+            </span>
+          )}
+          <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap bg-ink text-surface text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity z-30">
+            Longest: {longest}d
+          </span>
+        </div>
+      </div>
+      <div className="flex gap-[2px]">
+        {days.map(({ key, count, d }) => (
+          <span
+            key={key}
+            title={`${format(d, 'MMM d')} · ${count} ${count === 1 ? 'item' : 'items'}`}
+            className={`w-[6px] h-[6px] rounded-[1px] ${dotClass(count)}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function Layout() {
@@ -137,6 +185,9 @@ export function Layout() {
           <LogOut size={16} strokeWidth={1.5} /> Sign out
         </button>
       </div>
+
+      {/* Pulse — streak + 30-day activity */}
+      <PulseCard />
 
       {/* Daily quote + sync chip */}
       <div className="px-4 py-3 border-t border-line">
