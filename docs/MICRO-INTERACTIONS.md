@@ -55,8 +55,12 @@ three durations — pick the one that fits the affordance.
 
 - **Button press.** Every `<button>` gets `:active { transform: scale(0.985) }`
   globally. No classes needed.
-- **Focus ring.** Soft-glow on `:focus-visible` — keyboard users see it, mouse
-  users don't get ring noise.
+- **Focus indication.** Intentionally quiet. We do **not** ship a global
+  orange halo — that version rendered as a hard box around empty inputs.
+  Instead, styled inputs (e.g. `.input:focus`) shift their `border-color` from
+  `--color-line` to `--color-ink-muted`, and bare/unstyled form fields fall
+  back to the browser's native `:focus-visible` outline. Keyboard users still
+  get feedback; the UI never turns orange on idle focus.
 - **Cursor affordances.** Draggable items use `cursor-grab` + `active:cursor-grabbing`.
 
 ---

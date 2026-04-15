@@ -110,7 +110,7 @@ export function AdminLock({ children, variant = 'page' }: {
             onKeyDown={e => { if (e.key === 'Enter') submit() }}
             placeholder="••••"
             className={`w-full px-2 py-1.5 text-center tracking-[0.3em] bg-canvas border rounded text-sm transition-colors ${
-              error ? 'border-ink-muted' : 'border-line focus:border-blueprint'
+              error ? 'border-ink-muted' : 'border-line focus:border-ink-muted'
             }`}
           />
           {error && <p className="mt-1 text-ink-muted text-[11px]">Try again</p>}

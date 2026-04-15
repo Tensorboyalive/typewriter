@@ -79,11 +79,11 @@ html.dark body {
   background: var(--color-canvas);
   color: var(--color-ink);
   outline: none;
-  transition: box-shadow var(--dur-fast) var(--ease-out-expo);
+  transition: border-color var(--dur-fast) var(--ease-out-expo);
 }
 
 .input:focus {
-  box-shadow: 0 0 0 2px var(--color-blueprint);
+  border-color: var(--color-ink-muted);
 }
 
 ::-webkit-scrollbar {
@@ -138,19 +138,12 @@ html.dark .card-hover:hover {
   box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.5);
 }
 
-/* C. Focus rings — soft glow */
-input:focus,
-textarea:focus,
-select:focus,
-button:focus-visible,
-[role="button"]:focus-visible,
-a:focus-visible {
-  outline: none;
-  box-shadow:
-    0 0 0 2px var(--color-canvas),
-    0 0 0 4px var(--color-blueprint);
-  transition: box-shadow var(--dur-fast) var(--ease-out-expo);
-}
+/* C. Focus rings — intentionally minimal.
+   The earlier soft-glow ring rendered as a thick orange halo around empty
+   inputs and read as a floating box. We fall back to each element's own
+   focus treatment (e.g. `.input:focus` shifts border-color) plus the
+   browser's native `:focus-visible` outline for keyboard users on
+   un-styled elements. Keep it quiet. */
 
 /* D. Route fade */
 @keyframes route-fade-in {

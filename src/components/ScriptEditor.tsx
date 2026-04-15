@@ -114,7 +114,7 @@ export function ScriptEditor() {
                 scheduled_date: e.target.value || null,
               })
             }
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-blueprint"
+            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
           />
         </label>
 
@@ -124,7 +124,7 @@ export function ScriptEditor() {
           <select
             value={project.channel_id}
             onChange={e => handleChannelChange(e.target.value)}
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-blueprint"
+            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
           >
             {channels.map(c => (
               <option key={c.id} value={c.id}>
@@ -145,7 +145,7 @@ export function ScriptEditor() {
                 deadline: e.target.value ? new Date(e.target.value).toISOString() : null,
               })
             }
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-blueprint"
+            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
           />
         </label>
 

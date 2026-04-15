@@ -112,7 +112,7 @@ export function Expenses() {
 
   // Styled date input: token classes + calendar icon glyph overlaid on the left
   // so it matches the rest of the UI instead of the raw OS date picker.
-  const dateInputCls = 'bg-canvas border border-line rounded pl-8 pr-3 py-2 text-sm text-ink focus:outline-none focus:ring-1 focus:ring-blueprint w-full'
+  const dateInputCls = 'bg-canvas border border-line rounded pl-8 pr-3 py-2 text-sm text-ink focus:outline-none focus:border-ink-muted w-full'
 
   return (
     <div className="p-8 max-w-4xl">
@@ -414,7 +414,7 @@ export function Expenses() {
               onChange={e =>
                 setConversionRate(parseFloat(e.target.value) || 84)
               }
-              className="w-16 text-sm text-ink bg-canvas border border-line rounded px-2 py-1 text-center focus:outline-none focus:ring-1 focus:ring-blueprint tabular-nums"
+              className="w-16 text-sm text-ink bg-canvas border border-line rounded px-2 py-1 text-center focus:outline-none focus:border-ink-muted tabular-nums"
             />
             <span className="text-[10px] uppercase tracking-[0.15em] text-ink-muted">
               ₹
