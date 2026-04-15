@@ -20,9 +20,15 @@
   --font-sans: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
 }
 
-/* Dark mode — activated by adding `dark` class on <html>.
-   Variables override the tokens above; all `bg-canvas`, `text-ink`, etc.
-   utilities resolve via var() so they pick these up automatically. */
+/* Motion tokens — canonical easing + durations for every micro-interaction. */
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 280ms;
+}
+
+/* Dark mode */
 html.dark {
   color-scheme: dark;
   --color-canvas: #0b1220;
@@ -41,6 +47,11 @@ html.dark {
   --color-success-light: rgba(52, 211, 153, 0.15);
   --color-warning: #fbbf24;
   --color-warning-light: rgba(251, 191, 36, 0.15);
+}
+
+html, body {
+  transition: background-color var(--dur-slow) var(--ease-out-expo),
+              color var(--dur-slow) var(--ease-out-expo);
 }
 
 body {
@@ -68,7 +79,7 @@ html.dark body {
   background: var(--color-canvas);
   color: var(--color-ink);
   outline: none;
-  transition: box-shadow 0.15s;
+  transition: box-shadow var(--dur-fast) var(--ease-out-expo);
 }
 
 .input:focus {
@@ -98,6 +109,145 @@ html.dark body {
   color: var(--color-ink);
 }
 
+/* ─── Micro-interaction layer ────────────────────────────── */
+
+/* A. Button press haptic echo */
+button:not(:disabled) {
+  transition: transform var(--dur-fast) var(--ease-out-expo),
+              background-color var(--dur-fast) var(--ease-out-expo),
+              color var(--dur-fast) var(--ease-out-expo),
+              border-color var(--dur-fast) var(--ease-out-expo),
+              box-shadow var(--dur-fast) var(--ease-out-expo);
+}
+button:not(:disabled):active {
+  transform: scale(0.985);
+}
+
+/* B. Card hover lift — opt-in */
+.card-hover {
+  transition: transform var(--dur-base) var(--ease-out-expo),
+              box-shadow var(--dur-base) var(--ease-out-expo),
+              border-color var(--dur-base) var(--ease-out-expo);
+  will-change: transform;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+}
+html.dark .card-hover:hover {
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.5);
+}
+
+/* C. Focus rings — soft glow */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible,
+[role="button"]:focus-visible,
+a:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--color-canvas),
+    0 0 0 4px var(--color-blueprint);
+  transition: box-shadow var(--dur-fast) var(--ease-out-expo);
+}
+
+/* D. Route fade */
+@keyframes route-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.route-fade {
+  animation: route-fade-in var(--dur-base) var(--ease-out-expo);
+}
+
+/* E. List stagger */
+@keyframes stagger-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.stagger-in {
+  animation: stagger-in 240ms var(--ease-out-expo) both;
+}
+
+/* F. Chevron/disclosure rotation smoothness — utility class */
+.chev-toggle {
+  transition: transform var(--dur-base) var(--ease-out-expo);
+}
+
+/* G. Modal / sheet enter */
+@keyframes sheet-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.sheet-in {
+  animation: sheet-in var(--dur-base) var(--ease-out-expo);
+}
+
+/* H. Toast enter */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-in {
+  animation: toast-in var(--dur-base) var(--ease-out-expo);
+}
+
+/* I. Streak flame breath */
+@keyframes flame-breath {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.08); opacity: 0.92; }
+}
+.flame-breath {
+  animation: flame-breath 4s ease-in-out infinite;
+  transform-origin: center;
+}
+
+/* J. Checkbox tick pop */
+@keyframes tick-pop {
+  from { transform: scale(0.8); opacity: 0; }
+  60%  { transform: scale(1.05); opacity: 1; }
+  to   { transform: scale(1); opacity: 1; }
+}
+.tick-pop {
+  animation: tick-pop 200ms var(--ease-out-expo);
+}
+
+/* K. Invalid-drop shake */
+@keyframes shake-x {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+.shake-x {
+  animation: shake-x 180ms var(--ease-out-expo);
+}
+
+/* L. Sidebar active nav indicator (pseudo-element approach) */
+.nav-item {
+  position: relative;
+}
+.nav-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 2px;
+  height: 60%;
+  background: var(--color-blueprint);
+  border-radius: 2px;
+  transform: translateY(-50%) scaleY(0);
+  transform-origin: center;
+  transition: transform var(--dur-base) var(--ease-out-expo),
+              opacity var(--dur-base) var(--ease-out-expo);
+  opacity: 0;
+}
+.nav-item.is-active::before {
+  transform: translateY(-50%) scaleY(1);
+  opacity: 1;
+}
+
+/* Existing slide-in-right kept for back-compat */
 @keyframes slide-in-right {
   from {
     transform: translateX(100%);
@@ -110,5 +260,15 @@ html.dark body {
 }
 
 .animate-slide-in {
-  animation: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: slide-in-right 0.25s var(--ease-out-expo);
+}
+
+/* Reduced motion — disable everything. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

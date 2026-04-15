@@ -61,7 +61,7 @@ export function Kanban() {
         <div
           key={project.id}
           onClick={() => navigate(`/projects/${project.id}`)}
-          className="bg-surface border border-line rounded-md px-3 py-2 cursor-pointer hover:shadow-sm hover:border-blueprint/40 transition-all"
+          className="card-hover bg-surface border border-line rounded-md px-3 py-2 cursor-pointer hover:border-blueprint/40"
         >
           <p className="text-[12px] text-ink font-medium truncate mb-1.5">{project.title}</p>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -92,7 +92,7 @@ export function Kanban() {
       <div
         key={project.id}
         onClick={() => navigate(`/projects/${project.id}`)}
-        className="flex items-center gap-3 bg-surface border border-line rounded-md px-4 py-3 cursor-pointer group hover:shadow-sm hover:border-blueprint/40 transition-all"
+        className="card-hover flex items-center gap-3 bg-surface border border-line rounded-md px-4 py-3 cursor-pointer group hover:border-blueprint/40"
       >
         <p className="flex-1 text-sm text-ink font-medium truncate">{project.title}</p>
         <div className="flex items-center gap-2 shrink-0">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock, Flame } from 'lucide-react'
 import { getDayOfYear, format, subDays } from 'date-fns'
 import { useStore } from '../store'
@@ -87,7 +87,7 @@ function PulseCard() {
             <span className="text-[11px] text-ink-muted">Starting fresh</span>
           ) : (
             <span className="flex items-center gap-1">
-              <Flame size={12} className="text-blueprint" />
+              <Flame size={12} className={`text-blueprint ${current > 0 ? 'flame-breath' : ''}`} />
               <span className="text-blueprint font-medium text-[13px] tabular-nums">{current}</span>
               <span className="text-[11px] text-ink-muted">d streak</span>
             </span>
@@ -115,6 +115,7 @@ export function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [unlocked, setUnlocked] = useState(isUnlocked())
   const quote = useDailyQuote()
+  const location = useLocation()
   useEffect(() => {
     const h = () => setUnlocked(isUnlocked())
     window.addEventListener('tw-admin-unlock-change', h)
@@ -159,7 +160,7 @@ export function Layout() {
           <NavLink key={to} to={to} end={to === '/'}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
+              `nav-item ${isActive ? 'is-active' : ''} flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
                 isActive ? 'bg-blueprint-light text-blueprint font-medium' : 'text-ink-secondary hover:bg-canvas'
               }`
             }>
@@ -228,7 +229,9 @@ export function Layout() {
           <MusicPlayer />
         </div>
 
-        <Outlet />
+        <div key={location.pathname} className="route-fade">
+          <Outlet />
+        </div>
       </main>
     </div>
   )

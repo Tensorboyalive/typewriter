@@ -71,6 +71,7 @@ export interface Project {
   deal_id: string | null
   format?: ContentFormat | null
   created_at: string
+  updated_at?: string | null
 }
 
 export interface Expense {

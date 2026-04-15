@@ -57,6 +57,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role="alert"
+              className="toast-in"
               style={{
                 background: bgMap[t.variant],
                 color: '#fff',
