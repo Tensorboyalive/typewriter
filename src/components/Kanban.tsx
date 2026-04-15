@@ -3,7 +3,7 @@ import { format } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3 } from 'lucide-react'
 import { useStore } from '../store'
-import { STATUSES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat } from '../types'
+import { PIPELINE_STAGES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat } from '../types'
 
 type ViewMode = 'list' | 'board'
 
@@ -125,10 +125,10 @@ export function Kanban() {
     )
   }
 
-  // Inline stage-count summary (replaces the old right-side dock)
-  const stageSummary = STATUSES.map(s => ({
-    label: s.label.toLowerCase(),
-    count: projects.filter(p => p.status === s.id).length,
+  // Inline stage-count summary — uses the 3 coarse pipeline stages.
+  const stageSummary = PIPELINE_STAGES.map(stage => ({
+    label: stage.label.toLowerCase(),
+    count: projects.filter(p => stage.statuses.includes(p.status)).length,
   }))
 
   return (
@@ -217,43 +217,44 @@ export function Kanban() {
       )}
 
       {/* ─── BOARD VIEW ─────────────────────────────────── */}
+      {/*
+        3 columns: Ideation · In Process · Posted.
+        No horizontal scroll (equal 1fr columns). No column background tile —
+        cards sit directly on the canvas. Empty columns render nothing but the
+        header, keeping the surface quiet.
+      */}
       {viewMode === 'board' && (
-        <div className="overflow-x-auto -mx-2 px-2">
-          <div className="grid gap-3 min-w-max" style={{ gridTemplateColumns: `repeat(${STATUSES.length}, minmax(180px, 1fr))` }}>
-            {STATUSES.map(status => {
-              const items = filtered.filter(p => p.status === status.id)
-              return (
-                <div key={status.id} className="min-w-0">
-                  <div className="flex items-center gap-1.5 mb-2 px-1">
-                    <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted truncate">{status.label}</p>
-                    <span className="text-[10px] bg-canvas text-ink-muted px-1.5 py-0.5 rounded-full shrink-0">{items.length}</span>
-                  </div>
-                  <div className="space-y-2 bg-ink/[0.04] dark:bg-ink/[0.08] rounded-lg p-1.5 min-h-[200px]">
-                    {items.map(project => renderProjectCard(project, true))}
-                    {items.length === 0 && (
-                      <p className="text-[10px] text-ink-muted text-center py-8 italic">Empty</p>
-                    )}
-                  </div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          {PIPELINE_STAGES.map(stage => {
+            const items = filtered.filter(p => stage.statuses.includes(p.status))
+            return (
+              <div key={stage.id} className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-3 px-1">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted truncate">{stage.label}</p>
+                  <span className="text-[10px] text-ink-muted tabular-nums">{items.length}</span>
                 </div>
-              )
-            })}
-          </div>
+                <div className="space-y-2">
+                  {items.map(project => renderProjectCard(project, true))}
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
 
       {/* ─── LIST VIEW ──────────────────────────────────── */}
       {viewMode === 'list' && (
         <>
-          {STATUSES.map(status => {
-            const items = filtered.filter(p => p.status === status.id)
+          {PIPELINE_STAGES.map(stage => {
+            const items = filtered.filter(p => stage.statuses.includes(p.status))
             if (items.length === 0) return null
-            const isCollapsed = collapsed[status.id]
+            const isCollapsed = collapsed[stage.id]
 
             return (
-              <div key={status.id} className="mb-4">
-                <button onClick={() => toggleGroup(status.id)} className="flex items-center gap-2 mb-2 group">
+              <div key={stage.id} className="mb-4">
+                <button onClick={() => toggleGroup(stage.id)} className="flex items-center gap-2 mb-2 group">
                   {isCollapsed ? <ChevronRight size={14} className="text-ink-muted" /> : <ChevronDown size={14} className="text-ink-muted" />}
-                  <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{status.label}</p>
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{stage.label}</p>
                   <span className="text-[10px] bg-canvas text-ink-muted px-1.5 py-0.5 rounded-full">{items.length}</span>
                 </button>
                 {!isCollapsed && (

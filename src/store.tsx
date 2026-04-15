@@ -383,8 +383,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }
 
   const addProject = async (p: { title: string; type?: string | null; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }): Promise<Project> => {
+    // Derive a legacy `type` value from `format` so inserts succeed even on
+    // databases where migration 019 hasn't been run yet (the `type` column
+    // still has a NOT NULL constraint there). Mapping: reel→reel,
+    // carousel→carousel, text→post. Falls back to 'post' as a safe default.
+    const legacyType =
+      p.type ??
+      (p.format === 'reel' ? 'reel'
+       : p.format === 'carousel' ? 'carousel'
+       : p.format === 'text' ? 'post'
+       : 'post')
     const { data, error } = await supabase.from('projects').insert({
-      title: p.title, type: p.type ?? null, status: p.status, platform: p.platform ?? 'tb',
+      title: p.title, type: legacyType, status: p.status, platform: p.platform ?? 'tb',
       scheduled_date: p.scheduled_date ?? null, script: p.script ?? '', description: p.description ?? '',
       format: p.format ?? null,
       channel_id: activeChannelId!, user_id: user!.id,

@@ -18,6 +18,16 @@ export const STATUSES: { id: ProjectStatus; label: string }[] = [
   { id: 'posted', label: 'Posted' },
 ]
 
+// Pipeline stages — the 3-column Kanban view collapses the 5 fine-grained
+// statuses into 3 coarse stages. Underlying DB values are unchanged; this is
+// purely a UI bucketing.
+export type PipelineStage = 'ideation' | 'in_process' | 'posted'
+export const PIPELINE_STAGES: { id: PipelineStage; label: string; statuses: ProjectStatus[] }[] = [
+  { id: 'ideation',   label: 'Ideation',   statuses: ['idea'] },
+  { id: 'in_process', label: 'In Process', statuses: ['scripted', 'in_edit', 'ready'] },
+  { id: 'posted',     label: 'Posted',     statuses: ['posted'] },
+]
+
 export const CONTENT_TYPES: { id: ContentType; label: string; color: string }[] = [
   { id: 'reel', label: 'Reel', color: '#8b5cf6' },
   { id: 'story', label: 'Story', color: '#f59e0b' },

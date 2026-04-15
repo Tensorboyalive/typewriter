@@ -29,6 +29,7 @@ Migrations live in `supabase/migrations/` and run in filename order.
 | 016 | `project_format.sql` | `format` column on projects (reel / carousel / text) |
 | 017 | `security_fixes.sql` | Reset auto_create_profile default role to `editor`; add `WITH CHECK` to deals RLS |
 | 018 | `project_updated_at.sql` | `updated_at` column + `set_updated_at` trigger |
+| 019 | `projects_type_nullable.sql` | Drop NOT NULL on legacy `type` column (now superseded by `format`) |
 
 ---
 
