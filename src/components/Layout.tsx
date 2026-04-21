@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Home, Calendar, LayoutGrid, DollarSign, Bookmark, LogOut, Download, CheckSquare, Settings, FileOutput, Sun, Menu, X, Lock, Flame } from 'lucide-react'
+import { LogOut, Download, Menu, X, Lock, Flame } from 'lucide-react'
 import { getDayOfYear, format, subDays } from 'date-fns'
 import { useStore } from '../store'
 import { ChannelSwitcher } from './ChannelSwitcher'
@@ -8,21 +8,31 @@ import { ThemeToggle } from './ThemeToggle'
 import { MusicPlayer } from './MusicPlayer'
 import { isUnlocked, lockAdmin } from './AdminLock'
 import { useStreak } from '../lib/useStreak'
+import { cn } from '../lib/cn'
 
-const NAV = [
-  { to: '/', icon: Home, label: 'Dashboard' },
-  { to: '/today', icon: Sun, label: 'Today' },
-  { to: '/calendar', icon: Calendar, label: 'Calendar' },
-  { to: '/projects', icon: LayoutGrid, label: 'Pipeline' },
-  { to: '/checklist', icon: CheckSquare, label: 'Checklist' },
-  { to: '/output', icon: FileOutput, label: 'Output' },
-  { to: '/expenses', icon: DollarSign, label: 'Expenses' },
-  { to: '/saved', icon: Bookmark, label: 'Saved' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
+/**
+ * Editorial sidebar + shell.
+ *
+ * Brand: `typewriter:studio` with orange colon — matches lucid:v2 pattern.
+ * Nav items are mono-uppercase with a left-edge orange accent bar on active
+ * (the .nav-item::before CSS does the heavy lifting).
+ * Daily quote sits in serif-italic as the magazine "pull from the cut" moment.
+ */
+
+const NAV: { to: string; label: string }[] = [
+  { to: '/',          label: 'Dashboard' },
+  { to: '/today',     label: 'Today' },
+  { to: '/calendar',  label: 'Calendar' },
+  { to: '/projects',  label: 'Pipeline' },
+  { to: '/checklist', label: 'Checklist' },
+  { to: '/output',    label: 'Output' },
+  { to: '/expenses',  label: 'Expenses' },
+  { to: '/saved',     label: 'Saved' },
+  { to: '/settings',  label: 'Settings' },
 ]
 
 // Curated daily rotation — Naval, Marcus, Seneca, Munger, PG, Rubin.
-// Short. Deterministic by day-of-year so the same day always shows the same.
+// Deterministic by day-of-year so the same day always shows the same.
 const QUOTES: { text: string; author: string }[] = [
   { text: 'Earn with your mind, not your time.', author: 'Naval' },
   { text: 'Play long-term games with long-term people.', author: 'Naval' },
@@ -30,7 +40,7 @@ const QUOTES: { text: string; author: string }[] = [
   { text: 'Specific knowledge is found by pursuing genuine curiosity.', author: 'Naval' },
   { text: 'The obstacle is the way.', author: 'Marcus' },
   { text: 'Waste no more time arguing what a good man is. Be one.', author: 'Marcus' },
-  { text: 'You have power over your mind — not outside events.', author: 'Marcus' },
+  { text: 'You have power over your mind, not outside events.', author: 'Marcus' },
   { text: 'Confine yourself to the present.', author: 'Marcus' },
   { text: 'We suffer more in imagination than in reality.', author: 'Seneca' },
   { text: 'Luck is what happens when preparation meets opportunity.', author: 'Seneca' },
@@ -44,14 +54,14 @@ const QUOTES: { text: string; author: string }[] = [
   { text: 'The best art divides the audience.', author: 'Rubin' },
   { text: 'Begin where you are.', author: 'Rubin' },
   { text: 'Make something people want.', author: 'pg' },
-  { text: 'Live in the future, then build what’s missing.', author: 'pg' },
-  { text: 'Do things that don’t scale.', author: 'pg' },
+  { text: 'Live in the future, then build what\u2019s missing.', author: 'pg' },
+  { text: 'Do things that don\u2019t scale.', author: 'pg' },
   { text: 'Keep your identity small.', author: 'pg' },
   { text: 'Write. Often.', author: 'pg' },
   { text: 'The most important skill is learning how to learn.', author: 'Naval' },
   { text: 'Desire is a contract with yourself to be unhappy until you get it.', author: 'Naval' },
   { text: 'Be the silence between the notes.', author: 'Rubin' },
-  { text: 'Every new beginning comes from some other beginning’s end.', author: 'Seneca' },
+  { text: 'Every new beginning comes from some other beginning\u2019s end.', author: 'Seneca' },
   { text: 'Patience is bitter, but its fruit is sweet.', author: 'Munger' },
   { text: 'Ship it. Then fix it.', author: 'pg' },
 ]
@@ -65,7 +75,7 @@ function useDailyQuote() {
 
 function PulseCard() {
   const { current, longest, byDay, persona } = useStreak()
-  const personaLabel = persona === 'pa' ? 'PA' : 'YOU'
+  const personaLabel = persona === 'pa' ? 'pa' : 'you'
   const days = Array.from({ length: 30 }, (_, i) => {
     const d = subDays(new Date(), 29 - i)
     const key = format(d, 'yyyy-MM-dd')
@@ -73,27 +83,28 @@ function PulseCard() {
   })
   const dotClass = (count: number) => {
     if (count === 0) return 'bg-ink/10'
-    if (count <= 2) return 'bg-blueprint/30'
-    if (count <= 5) return 'bg-blueprint/60'
-    return 'bg-blueprint'
+    if (count <= 2) return 'bg-viral/30'
+    if (count <= 5) return 'bg-viral/60'
+    return 'bg-viral'
   }
   const coldStart = current <= 1
   return (
-    <div className="px-4 py-3 border-t border-line">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{personaLabel}</p>
+    <div className="px-5 py-4 border-t border-ink/10">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="mono text-[0.6rem] uppercase tracking-[0.28em] text-muted">
+          {personaLabel} · 30 days
+        </span>
         <div className="group relative" title={`Longest: ${longest}d`}>
           {coldStart ? (
-            <span className="text-[11px] text-ink-muted">Starting fresh</span>
+            <span className="mono text-[0.62rem] uppercase tracking-[0.24em] text-muted">starting fresh</span>
           ) : (
-            <span className="flex items-center gap-1">
-              <Flame size={12} className={`text-blueprint ${current > 0 ? 'flame-breath' : ''}`} />
-              <span className="text-blueprint font-medium text-[13px] tabular-nums">{current}</span>
-              <span className="text-[11px] text-ink-muted">d streak</span>
+            <span className="flex items-center gap-1.5">
+              <Flame size={11} className={`text-viral ${current > 0 ? 'flame-breath' : ''}`} />
+              <span className="mono text-[0.8rem] font-medium text-viral tnum">{current}d</span>
             </span>
           )}
-          <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap bg-ink text-surface text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity z-30">
-            Longest: {longest}d
+          <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded bg-ink px-1.5 py-0.5 text-[0.62rem] text-cream opacity-0 transition-opacity group-hover:opacity-100 z-30">
+            longest · {longest}d
           </span>
         </div>
       </div>
@@ -102,7 +113,7 @@ function PulseCard() {
           <span
             key={key}
             title={`${format(d, 'MMM d')} · ${count} ${count === 1 ? 'item' : 'items'}`}
-            className={`w-[6px] h-[6px] rounded-[1px] ${dotClass(count)}`}
+            className={`h-[7px] w-[7px] rounded-[1px] ${dotClass(count)}`}
           />
         ))}
       </div>
@@ -116,6 +127,7 @@ export function Layout() {
   const [unlocked, setUnlocked] = useState(isUnlocked())
   const quote = useDailyQuote()
   const location = useLocation()
+
   useEffect(() => {
     const h = () => setUnlocked(isUnlocked())
     window.addEventListener('tw-admin-unlock-change', h)
@@ -138,93 +150,135 @@ export function Layout() {
   }
 
   const Sidebar = (
-    <aside className="w-56 bg-surface border-r border-line flex flex-col h-full">
-      <div className="p-6 pb-4 flex items-center justify-between">
+    <aside className="flex h-full w-60 flex-col border-r border-ink/10 bg-paper">
+      {/* Brand block */}
+      <div className="flex items-start justify-between px-5 pb-4 pt-6">
         <div>
-          <h1 className="text-xl font-light tracking-wide text-ink">typewriter</h1>
-          <p className="text-[11px] italic text-ink-muted tracking-normal mt-1">where we write</p>
+          <h1 className="serif text-[1.75rem] leading-none tracking-[-0.02em] text-ink">
+            typewriter<span className="text-viral">:</span>studio
+          </h1>
+          <p className="mono mt-2 text-[0.6rem] uppercase tracking-[0.28em] text-muted">
+            where the pipeline lives
+          </p>
         </div>
-        <button onClick={() => setMobileOpen(false)}
-          className="md:hidden p-1 text-ink-muted hover:text-ink" aria-label="Close menu">
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="p-1 text-muted hover:text-ink md:hidden"
+          aria-label="close menu"
+        >
           <X size={18} />
         </button>
       </div>
 
-      <div className="px-3 pb-4 border-b border-line mb-2">
-        <p className="text-[9px] uppercase tracking-[0.2em] text-ink-muted px-3 mb-1">Channel</p>
+      {/* Channel picker */}
+      <div className="mb-3 border-b border-ink/10 px-4 pb-4">
+        <p className="mono mb-2 px-1 text-[0.58rem] uppercase tracking-[0.3em] text-muted">
+          channel
+        </p>
         <ChannelSwitcher canManage={true} />
       </div>
 
-      <nav className="flex-1 px-3 space-y-0.5 overflow-auto">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink key={to} to={to} end={to === '/'}
+      {/* Nav */}
+      <nav
+        className="flex-1 space-y-0.5 overflow-auto px-3"
+        aria-label="primary"
+      >
+        {NAV.map(({ to, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={to === '/'}
             onClick={() => setMobileOpen(false)}
             className={({ isActive }) =>
-              `nav-item ${isActive ? 'is-active' : ''} flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive ? 'bg-blueprint-light text-blueprint font-medium' : 'text-ink-secondary hover:bg-canvas'
-              }`
-            }>
-            <Icon size={16} strokeWidth={1.5} />
+              cn(
+                'nav-item mono flex items-center gap-3 px-3 py-2.5 text-[0.7rem] uppercase tracking-[0.22em] transition-colors',
+                isActive
+                  ? 'is-active text-ink font-medium'
+                  : 'text-muted hover:text-ink',
+              )
+            }
+          >
             {label}
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-3 space-y-1 border-t border-line">
+      {/* Footer actions */}
+      <div className="space-y-0.5 border-t border-ink/10 p-3">
         {unlocked && (
-          <button onClick={lockAdmin}
-            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-secondary hover:bg-canvas transition-colors w-full">
-            <Lock size={16} strokeWidth={1.5} /> Lock admin
+          <button
+            onClick={lockAdmin}
+            className="mono flex w-full items-center gap-3 px-3 py-2 text-[0.68rem] uppercase tracking-[0.22em] text-muted hover:text-ink transition-colors"
+          >
+            <Lock size={13} strokeWidth={1.5} /> lock admin
           </button>
         )}
-        <button onClick={handleExport}
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-secondary hover:bg-canvas transition-colors w-full">
-          <Download size={16} strokeWidth={1.5} /> Export data
+        <button
+          onClick={handleExport}
+          className="mono flex w-full items-center gap-3 px-3 py-2 text-[0.68rem] uppercase tracking-[0.22em] text-muted hover:text-ink transition-colors"
+        >
+          <Download size={13} strokeWidth={1.5} /> export data
         </button>
-        <button onClick={signOut}
-          className="flex items-center gap-3 px-3 py-2 rounded-md text-sm text-ink-muted hover:bg-canvas hover:text-danger transition-colors w-full">
-          <LogOut size={16} strokeWidth={1.5} /> Sign out
+        <button
+          onClick={signOut}
+          className="mono flex w-full items-center gap-3 px-3 py-2 text-[0.68rem] uppercase tracking-[0.22em] text-muted hover:text-danger transition-colors"
+        >
+          <LogOut size={13} strokeWidth={1.5} /> sign out
         </button>
       </div>
 
-      {/* Pulse — streak + 30-day activity */}
+      {/* Streak pulse */}
       <PulseCard />
 
-      {/* Daily quote + sync chip */}
-      <div className="px-4 py-3 border-t border-line">
-        <p className="text-[11px] italic text-ink-muted leading-relaxed">“{quote.text}”</p>
-        <p className="text-[10px] not-italic text-ink-muted mt-1">— {quote.author}</p>
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mt-3">Synced to cloud</p>
+      {/* Daily quote — serif-italic editorial pullquote in miniature */}
+      <div className="border-t border-ink/10 px-5 py-4">
+        <p className="serif-italic text-[0.95rem] leading-[1.35] text-ink/85">
+          &ldquo;{quote.text}&rdquo;
+        </p>
+        <p className="mono mt-2 text-[0.56rem] uppercase tracking-[0.3em] text-muted">
+          · {quote.author}
+        </p>
+        <p className="mono mt-4 text-[0.56rem] uppercase tracking-[0.3em] text-muted/70">
+          synced to cloud
+        </p>
       </div>
     </aside>
   )
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-cream text-ink">
       {/* Desktop sidebar */}
       <div className="hidden md:block">{Sidebar}</div>
 
       {/* Mobile drawer */}
       {mobileOpen && (
         <>
-          <div className="md:hidden fixed inset-0 bg-black/40 z-40" onClick={() => setMobileOpen(false)} />
-          <div className="md:hidden fixed inset-y-0 left-0 z-50">{Sidebar}</div>
+          <div
+            className="fixed inset-0 z-40 bg-ink/40 md:hidden"
+            onClick={() => setMobileOpen(false)}
+          />
+          <div className="fixed inset-y-0 left-0 z-50 md:hidden">{Sidebar}</div>
         </>
       )}
 
-      <main className="flex-1 overflow-auto relative">
+      <main className="relative flex-1 overflow-auto">
         {/* Mobile top bar */}
-        <div className="md:hidden sticky top-0 z-20 flex items-center justify-between px-4 h-12 bg-surface/90 backdrop-blur border-b border-line">
-          <button onClick={() => setMobileOpen(true)} aria-label="Open menu"
-            className="p-1.5 rounded hover:bg-canvas text-ink">
+        <div className="sticky top-0 z-20 flex h-12 items-center justify-between border-b border-ink/10 bg-paper/90 px-4 backdrop-blur md:hidden">
+          <button
+            onClick={() => setMobileOpen(true)}
+            aria-label="open menu"
+            className="p-1.5 text-ink hover:bg-cream rounded"
+          >
             <Menu size={18} />
           </button>
-          <span className="text-sm font-light tracking-wide text-ink">typewriter</span>
+          <span className="serif text-[0.95rem] text-ink">
+            typewriter<span className="text-viral">:</span>studio
+          </span>
           <div className="w-7" />
         </div>
 
-        {/* Floating top-right toolbar — theme toggle + music player (desktop only) */}
-        <div className="hidden md:flex fixed top-4 right-4 z-30 items-start gap-2">
+        {/* Floating top-right toolbar — theme + music */}
+        <div className="fixed right-4 top-4 z-30 hidden items-start gap-2 md:flex">
           <ThemeToggle />
           <MusicPlayer />
         </div>
