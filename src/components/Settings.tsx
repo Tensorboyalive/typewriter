@@ -182,7 +182,7 @@ export function Settings() {
             />
           </FieldRow>
           <FieldRow label="email">
-            <p className="text-[0.95rem] text-ink">{user?.email ?? '—'}</p>
+            <p className="text-[0.95rem] text-ink">{user?.email ?? '·'}</p>
           </FieldRow>
           <FieldRow label="your role">
             <div className="flex flex-wrap items-center gap-3">

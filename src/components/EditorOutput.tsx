@@ -25,7 +25,7 @@ export function EditorOutput() {
   // Short channel tag — first token or first 4 chars.
   const channelTag = (id: string) => {
     const ch = channels.find(c => c.id === id)
-    if (!ch) return '—'
+    if (!ch) return '·'
     const name = ch.name.trim()
     const first = name.split(/[\s/_-]+/)[0]
     return (first || name).slice(0, 6).toUpperCase()
@@ -148,7 +148,7 @@ export function EditorOutput() {
           <input
             value={desc}
             onChange={e => setDesc(e.target.value)}
-            placeholder="what did you deliver? e.g. edited tmg reel — podcast clip"
+            placeholder="what did you deliver? e.g. edited tmg reel · podcast clip"
             autoFocus
             className="input-underline mt-4"
             onKeyDown={e => { if (e.key === 'Enter' && desc.trim()) handleAdd() }}
@@ -157,7 +157,7 @@ export function EditorOutput() {
             <input
               value={link}
               onChange={e => setLink(e.target.value)}
-              placeholder="live link (optional) — https://…"
+              placeholder="live link (optional) · https://…"
               className="input-underline flex-1 min-w-[220px]"
             />
             <select

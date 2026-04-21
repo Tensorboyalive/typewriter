@@ -257,7 +257,7 @@ export function Kanban() {
                 <div className="flex flex-col">
                   {items.length === 0 ? (
                     <p className="mono mt-6 text-[0.62rem] uppercase tracking-[0.24em] text-muted/70">
-                      — empty —
+                      · empty ·
                     </p>
                   ) : items.map(project => renderProjectCard(project, true))}
                 </div>

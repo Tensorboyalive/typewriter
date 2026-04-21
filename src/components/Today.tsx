@@ -427,7 +427,7 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
             'mono text-[0.58rem] uppercase tracking-[0.24em] tnum',
             block.is_mit ? 'text-ink/80' : 'text-muted',
           )}>
-            {minToLabel(block.start_min)} – {minToLabel(effectiveEnd)}
+            {minToLabel(block.start_min)} · {minToLabel(effectiveEnd)}
             {block.is_mit && ' · mit'}
           </p>
           {editing ? (
@@ -586,7 +586,7 @@ function AddBlockModal({ state, projects, checklist, onClose, onSubmit }: {
       >
         <p className="mono text-[0.62rem] uppercase tracking-[0.28em] text-muted">add · block</p>
         <p className="serif mt-2 text-[1.5rem] leading-tight text-ink tnum">
-          {minToLabel(state.start_min)} – {minToLabel(state.end_min)}
+          {minToLabel(state.start_min)} · {minToLabel(state.end_min)}
         </p>
 
         <label className="mono mt-6 block text-[0.58rem] uppercase tracking-[0.28em] text-muted">label</label>
@@ -606,7 +606,7 @@ function AddBlockModal({ state, projects, checklist, onClose, onSubmit }: {
           onChange={e => { setProjectId(e.target.value); if (e.target.value) setChecklistId('') }}
           className="mono mt-2 w-full border-b border-ink/20 bg-transparent py-2 text-[0.85rem] outline-none focus:border-viral"
         >
-          <option value="">— none —</option>
+          <option value="">· none ·</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
         </select>
 
@@ -618,7 +618,7 @@ function AddBlockModal({ state, projects, checklist, onClose, onSubmit }: {
           onChange={e => { setChecklistId(e.target.value); if (e.target.value) setProjectId('') }}
           className="mono mt-2 w-full border-b border-ink/20 bg-transparent py-2 text-[0.85rem] outline-none focus:border-viral"
         >
-          <option value="">— none —</option>
+          <option value="">· none ·</option>
           {checklist.filter(c => c.status !== 'done').map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
 

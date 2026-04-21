@@ -192,7 +192,7 @@ export function ScriptEditor() {
             <textarea
               value={project.script}
               onChange={e => updateProject(project.id, { script: e.target.value })}
-              placeholder={`start writing your script here…\n\nthink about:\n\u00B7 hook \u2014 first 3 seconds\n\u00B7 story \u2014 the main content\n\u00B7 cta \u2014 what should they do?`}
+              placeholder={`start writing your script here…\n\nthink about:\n\u00B7 hook. first 3 seconds\n\u00B7 story. the main content\n\u00B7 cta. what should they do?`}
               className="min-h-[60vh] w-full resize-none bg-transparent text-[1.02rem] leading-[1.7] text-ink outline-none placeholder:text-ink/30"
             />
           ) : (

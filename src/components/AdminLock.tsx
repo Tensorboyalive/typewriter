@@ -46,7 +46,7 @@ const COPY = {
   inline: {
     eyebrow: 'admin only',
     heading: 'just for the boss',
-    subline: "numbers nerd-out — nothing to see here.",
+    subline: "numbers nerd-out. nothing to see here.",
     cta: 'verify admin',
   },
   page: {
