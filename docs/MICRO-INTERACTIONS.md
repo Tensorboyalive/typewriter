@@ -48,6 +48,22 @@ three durations — pick the one that fits the affordance.
 | `.shake-x` | Brief horizontal shake | Invalid drops (reserved for future) |
 | `.nav-item.is-active` | Left accent bar | Active nav link |
 | `.route-fade` | Crossfade on route change | Outlet wrapper in Layout |
+| `.hero-rise` · `.hero-rise-delay` | 900ms fade-and-rise entrance for landing hero elements | Auth page hero block |
+| `.stream-waiting` | 1.4s opacity breath while holding a progress bar at peak | Reserved for future stream-status surfaces |
+| `.marquee-track` | 40s linear horizontal loop | Reserved for editorial band (not currently mounted) |
+
+### Editorial typography + chip utilities
+
+| Class | What it does |
+|---|---|
+| `.serif` · `.serif-italic` | Apply Instrument Serif (tight tracking; italic variant loosens) |
+| `.mono` | Apply JetBrains Mono with tabular numerals |
+| `.eyebrow` · `.eyebrow-plain` | Magazine-issue eyebrow (40px accent bar + mono label) |
+| `.highlight` · `.highlight-cream` · `.highlight-ink` · `.strike` | HighlightChip variants for the orange/cream/ink/strike phrases |
+| `.rule-top` · `.rule-bottom` | 1px hairline dividers at section boundaries |
+| `.grain` | SVG-noise ::before overlay for dark thesis sections (body already has a global grain layer) |
+| `.input-underline` | Underline form input — no box, 1px bottom rule, viral on focus, italic serif placeholder |
+| `.tnum` | Shortcut for `font-variant-numeric: tabular-nums` |
 
 ---
 
@@ -55,12 +71,13 @@ three durations — pick the one that fits the affordance.
 
 - **Button press.** Every `<button>` gets `:active { transform: scale(0.985) }`
   globally. No classes needed.
-- **Focus indication.** Intentionally quiet. We do **not** ship a global
-  orange halo — that version rendered as a hard box around empty inputs.
-  Instead, styled inputs (e.g. `.input:focus`) shift their `border-color` from
-  `--color-line` to `--color-ink-muted`, and bare/unstyled form fields fall
-  back to the browser's native `:focus-visible` outline. Keyboard users still
-  get feedback; the UI never turns orange on idle focus.
+- **Focus indication.** Editorial system now ships a global
+  `:focus-visible` orange ring (2px `--color-viral` with 3px offset) via a
+  `:where(...)` selector that targets interactive elements only on keyboard
+  focus. Mouse clicks don't trigger it (thanks to `:focus-visible` vs
+  `:focus`). Form inputs keep their own per-variant focus treatment on top:
+  `.input` shifts to `var(--color-viral)`, `.input-underline` flips its
+  bottom rule to viral.
 - **Cursor affordances.** Draggable items use `cursor-grab` + `active:cursor-grabbing`.
 
 ---
