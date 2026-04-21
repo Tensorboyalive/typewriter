@@ -3,6 +3,7 @@ import { format, addDays, subDays } from 'date-fns'
 import { Plus, ChevronLeft, ChevronRight, ExternalLink, Trash2, X, Loader2 } from 'lucide-react'
 import { useStore } from '../store'
 import { LinkifiedText } from './LinkifiedText'
+import { Eyebrow } from './editorial/Eyebrow'
 
 const safeHref = (url?: string | null): string | undefined => {
   if (!url) return undefined
@@ -45,10 +46,6 @@ export function EditorOutput() {
 
   const handleAdd = async () => {
     if (!desc.trim()) return
-    // `addEditorOutput` writes against active channel in the store. If the
-    // user picked a different channel via the dropdown, switch active first
-    // so the row lands on the right channel. (Active channel is global app
-    // state — switching back is cheap and matches existing conventions.)
     await addEditorOutput({
       description: desc.trim(),
       live_link: link.trim() || null,
@@ -71,154 +68,194 @@ export function EditorOutput() {
   }
 
   const getUserName = (userId: string) => {
-    if (userId === user?.id) return 'You'
+    if (userId === user?.id) return 'you'
     const member = teamMembers.find(m => m.user_id === userId)
-    return member?.profile_name || 'Team Member'
+    return (member?.profile_name || 'team member').toLowerCase()
   }
 
   const totalToday = dayOutputs.length
   const myOutputs = dayOutputs.filter(o => o.user_id === user?.id).length
 
   return (
-    <div className="p-8 max-w-3xl">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto w-full max-w-[900px] px-6 py-10 md:px-10 md:py-16">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">Daily Log</p>
-          <h2 className="text-2xl font-light text-ink">Output</h2>
+          <Eyebrow>daily log · output</Eyebrow>
+          <h1
+            className="serif mt-6 leading-[0.95] tracking-[-0.02em] text-ink"
+            style={{ fontSize: 'clamp(2.25rem, calc(1rem + 2.5vw), 3.5rem)' }}
+          >
+            what <span className="serif-italic">shipped</span>, today.
+          </h1>
         </div>
         <button
           onClick={() => setAdding(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors"
+          className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
         >
-          <Plus size={16} /> Log Output
+          <Plus size={12} strokeWidth={2} /> log output
         </button>
       </div>
 
       {/* Date nav */}
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => setDate(subDays(date, 1))} className="p-1 rounded hover:bg-canvas text-ink-muted">
-          <ChevronLeft size={18} />
-        </button>
-        <div className="text-center">
-          <p className="text-sm font-medium text-ink">{isToday ? 'Today' : format(date, 'EEEE')}</p>
-          <p className="text-[10px] text-ink-muted">{format(date, 'MMMM d, yyyy')}</p>
+      <div className="mt-10 rule-top rule-bottom flex flex-wrap items-center gap-x-6 gap-y-4 border-ink/10 py-5">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setDate(subDays(date, 1))}
+            aria-label="previous day"
+            className="p-1 text-muted hover:text-viral"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div>
+            <p className="serif text-[1.15rem] leading-tight text-ink">
+              {isToday ? 'today' : format(date, 'EEEE').toLowerCase()}
+            </p>
+            <p className="mono text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+              {format(date, 'MMMM d, yyyy').toLowerCase()}
+            </p>
+          </div>
+          <button
+            onClick={() => setDate(addDays(date, 1))}
+            aria-label="next day"
+            className="p-1 text-muted hover:text-viral"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
-        <button onClick={() => setDate(addDays(date, 1))} className="p-1 rounded hover:bg-canvas text-ink-muted">
-          <ChevronRight size={18} />
-        </button>
         <div className="flex-1" />
         <div className="text-right">
-          <p className="text-2xl font-light text-ink tabular-nums">{totalToday}</p>
-          <p className="text-[10px] text-ink-muted">{myOutputs} by you</p>
+          <p className="serif text-[2rem] leading-none text-ink tnum">{totalToday}</p>
+          <p className="mono mt-1 text-[0.58rem] uppercase tracking-[0.28em] text-muted tnum">
+            {myOutputs} by you
+          </p>
         </div>
       </div>
 
-      {/* Quick add form */}
+      {/* Add drawer */}
       {adding && (
-        <div className="mb-6 bg-surface border border-line rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Log what you did today</p>
-            <button onClick={() => setAdding(false)} className="text-ink-muted hover:text-ink"><X size={16} /></button>
+        <div className="mt-8 rule-bottom border-ink/10 bg-paper/60 p-6">
+          <div className="flex items-center justify-between">
+            <Eyebrow>log what you did today</Eyebrow>
+            <button
+              onClick={() => setAdding(false)}
+              aria-label="close"
+              className="text-muted hover:text-ink"
+            >
+              <X size={15} />
+            </button>
           </div>
           <input
             value={desc}
             onChange={e => setDesc(e.target.value)}
-            placeholder="What did you deliver? e.g. Edited TMG reel — podcast clip"
+            placeholder="what did you deliver? e.g. edited tmg reel — podcast clip"
             autoFocus
-            className="input w-full mb-3"
+            className="input-underline mt-4"
             onKeyDown={e => { if (e.key === 'Enter' && desc.trim()) handleAdd() }}
           />
-          <div className="flex gap-2">
+          <div className="mt-5 flex flex-wrap items-end gap-3">
             <input
               value={link}
               onChange={e => setLink(e.target.value)}
-              placeholder="Live link (optional) — https://..."
-              className="input flex-1"
+              placeholder="live link (optional) — https://…"
+              className="input-underline flex-1 min-w-[220px]"
             />
             <select
               value={outputChannelId}
               onChange={e => setOutputChannelId(e.target.value)}
-              className="input"
               title="Channel"
+              className="mono border-b border-ink/20 bg-transparent py-2 text-[0.85rem] text-ink outline-none focus:border-viral"
             >
               {channels.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
-            <button onClick={handleAdd} className="px-4 py-2 bg-blueprint text-white rounded-md text-sm">
-              Add
+            <button
+              onClick={handleAdd}
+              className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+            >
+              log it
             </button>
           </div>
         </div>
       )}
 
-      {/* Output entries grouped by user */}
+      {/* Empty state */}
       {Object.keys(byUser).length === 0 && !adding && (
-        <div className="text-center py-20">
-          <p className="text-ink-muted text-sm">No output logged for this day yet.</p>
-        </div>
+        <p className="mono mt-10 py-16 text-center text-[0.7rem] uppercase tracking-[0.26em] text-muted">
+          no output logged for this day yet.
+        </p>
       )}
 
-      {Object.entries(byUser).map(([userId, outputs]) => (
-        <div key={userId} className="mb-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-6 h-6 rounded-full bg-blueprint/15 flex items-center justify-center">
-              <span className="text-[10px] font-medium text-blueprint">{getUserName(userId).charAt(0).toUpperCase()}</span>
+      {/* Grouped entries */}
+      <div className="mt-10 space-y-10">
+        {Object.entries(byUser).map(([userId, outputs]) => (
+          <section key={userId}>
+            <div className="mb-3 flex items-center gap-3">
+              <span className="mono flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-viral/15 text-[0.7rem] uppercase text-viral">
+                {getUserName(userId).charAt(0).toUpperCase()}
+              </span>
+              <Eyebrow rule={false}>{getUserName(userId)}</Eyebrow>
+              <span className="mono text-[0.6rem] uppercase tracking-[0.26em] text-muted tnum">
+                {outputs.length} items
+              </span>
             </div>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{getUserName(userId)}</p>
-            <span className="text-[10px] text-ink-muted">{outputs.length} items</span>
-          </div>
-          <div className="space-y-1.5">
-            {outputs.map(output => (
-              <div key={output.id} className="flex items-start gap-3 bg-surface border border-line rounded-md px-4 py-3 group relative">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-ink pr-14">
-                    <LinkifiedText text={output.description} preserveWhitespace={false} />
-                  </p>
-                  <p className="text-[10px] text-ink-muted mt-0.5">
-                    {format(new Date(output.created_at), 'h:mm a')}
-                  </p>
-                </div>
-                <span
-                  className="absolute top-2 right-3 text-[9px] font-medium px-1.5 py-0.5 rounded bg-blueprint-light/60 text-blueprint tracking-wider"
-                  title={channels.find(c => c.id === output.channel_id)?.name || ''}
-                >
-                  {channelTag(output.channel_id)}
-                </span>
-                <div className="flex items-center gap-2 shrink-0 mt-6">
-                  {output.live_link && (() => {
-                    const href = safeHref(output.live_link)
-                    return href ? (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={e => e.stopPropagation()}
-                        className="flex items-center gap-1 text-[10px] text-blueprint hover:underline"
+            <ul className="divide-y divide-ink/10 rule-top rule-bottom">
+              {outputs.map(output => (
+                <li key={output.id} className="group relative flex items-start gap-4 py-4 -mx-2 px-2 transition-colors hover:bg-paper/60">
+                  <div className="min-w-0 flex-1 pr-20">
+                    <p className="serif text-[1.02rem] leading-[1.45] text-ink">
+                      <LinkifiedText text={output.description} preserveWhitespace={false} />
+                    </p>
+                    <p className="mono mt-2 text-[0.58rem] uppercase tracking-[0.26em] text-muted tnum">
+                      {format(new Date(output.created_at), 'h:mm a')}
+                    </p>
+                  </div>
+                  <span
+                    className="mono absolute right-2 top-4 bg-viral/15 px-1.5 py-0.5 text-[0.56rem] uppercase tracking-[0.22em] text-viral"
+                    title={channels.find(c => c.id === output.channel_id)?.name || ''}
+                  >
+                    {channelTag(output.channel_id)}
+                  </span>
+                  <div className="mt-10 flex shrink-0 items-center gap-3">
+                    {output.live_link && (() => {
+                      const href = safeHref(output.live_link)
+                      return href ? (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="mono inline-flex items-center gap-1 text-[0.58rem] uppercase tracking-[0.26em] text-viral hover:underline"
+                        >
+                          <ExternalLink size={11} /> live
+                        </a>
+                      ) : (
+                        <span
+                          className="mono inline-flex items-center gap-1 text-[0.58rem] uppercase tracking-[0.26em] text-muted"
+                          title="Invalid or unsafe link"
+                        >
+                          <ExternalLink size={11} /> live
+                        </span>
+                      )
+                    })()}
+                    {output.user_id === user?.id && (
+                      <button
+                        onClick={() => handleDelete(output.id)}
+                        disabled={deletingId === output.id}
+                        aria-label="delete output"
+                        className="p-1 text-muted opacity-0 transition-all hover:text-danger group-hover:opacity-100 disabled:opacity-100"
                       >
-                        <ExternalLink size={12} /> Live
-                      </a>
-                    ) : (
-                      <span className="flex items-center gap-1 text-[10px] text-ink-muted" title="Invalid or unsafe link">
-                        <ExternalLink size={12} /> Live
-                      </span>
-                    )
-                  })()}
-                  {output.user_id === user?.id && (
-                    <button
-                      onClick={() => handleDelete(output.id)}
-                      disabled={deletingId === output.id}
-                      className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light opacity-0 group-hover:opacity-100 transition-all disabled:opacity-100"
-                    >
-                      {deletingId === output.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
+                        {deletingId === output.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
     </div>
   )
 }
