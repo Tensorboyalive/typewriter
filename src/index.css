@@ -1,26 +1,70 @@
 @import "tailwindcss";
 
+/* =============================================================================
+   EDITORIAL DESIGN SYSTEM — typewriter:studio
+   -----------------------------------------------------------------------------
+   Three-layer architecture (per design.md §3):
+     1. Primitive tokens  — raw hex values, the palette of record.
+     2. Semantic tokens   — Tailwind-exposed aliases (bg-cream, text-viral, ...)
+     3. Legacy aliases    — every pre-redesign class (bg-canvas, text-blueprint,
+                             bg-surface, ...) still works, now pointing at the
+                             new primitives so existing UI repaints automatically.
+============================================================================= */
+
 @theme {
-  --color-canvas: #f0f4f8;
-  --color-surface: #ffffff;
-  --color-ink: #1a2b3d;
-  --color-ink-secondary: #5a7184;
-  --color-ink-muted: #94a3b8;
-  --color-line: #d0dbe6;
-  --color-line-light: #e2eaf2;
-  --color-blueprint: #f97316;
-  --color-blueprint-light: #ffedd5;
-  --color-blueprint-dark: #ea580c;
-  --color-danger: #ef4444;
-  --color-danger-light: #fee2e2;
-  --color-success: #10b981;
-  --color-success-light: #d1fae5;
-  --color-warning: #f59e0b;
-  --color-warning-light: #fef3c7;
-  --font-sans: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  /* ─── PRIMITIVES ─ surfaces ───────────────────────────── */
+  --color-cream:      #F3EEE2;   /* default body background */
+  --color-paper:      #FAF7F0;   /* cards, forms, slightly lifted surfaces */
+  --color-ink:        #0A0A0A;   /* body text, dark thesis sections */
+  --color-ink-soft:   #1E1E1E;   /* subtly-less-dark text */
+  --color-muted:      #6B6660;   /* eyebrows, captions, muted body */
+  --color-rule:       rgba(10, 10, 10, 0.14); /* hairlines */
+
+  /* ─── PRIMITIVES ─ accent ─────────────────────────────── */
+  --color-viral:      #E85D1C;   /* the single accent. emphasis only. */
+  --color-viral-soft: #F4B183;   /* tinted variant (rare) */
+
+  /* ─── PRIMITIVES ─ data-viz only ──────────────────────── */
+  /* Used for types.ts category dots, never as UI chrome. */
+  --color-brain-red:    #C53030;
+  --color-brain-amber:  #D97706;
+  --color-brain-cyan:   #0E7C86;
+  --color-brain-violet: #6D28D9;
+
+  /* ─── SEMANTIC FEEDBACK ───────────────────────────────── */
+  --color-danger:       #C53030;
+  --color-danger-light: #FCE6E6;
+  --color-success:      #137752;
+  --color-success-light: #DBEEE3;
+  --color-warning:      #B4610D;
+  --color-warning-light: #FAE7CE;
+
+  /* ─── LEGACY ALIASES — DO NOT REMOVE ──────────────────── */
+  /* Every pre-existing Tailwind class (bg-canvas, text-ink, border-line,
+     text-blueprint, bg-surface, etc.) resolves via these. Swapping just
+     the primitives repaints the entire app without any file churn. */
+  --color-canvas:          var(--color-cream);
+  --color-surface:         var(--color-paper);
+  --color-ink-secondary:   var(--color-muted);
+  --color-ink-muted:       #8A827A;
+  --color-line:            rgba(10, 10, 10, 0.14);
+  --color-line-light:      rgba(10, 10, 10, 0.08);
+  --color-blueprint:       var(--color-viral);
+  --color-blueprint-light: #F6E1D0;
+  --color-blueprint-dark:  #C84B11;
+
+  /* ─── FONT FAMILIES ───────────────────────────────────── */
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Instrument Serif', 'Iowan Old Style', 'Apple Garamond', Georgia, serif;
+  --font-mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ─── EDITORIAL TYPE SCALE (fluid) ────────────────────── */
+  --text-display: clamp(3.5rem, 1rem + 8vw, 9rem);
+  --text-hero:    clamp(2.5rem, 1rem + 5vw, 5rem);
+  --text-lede:    clamp(1.125rem, 0.95rem + 0.5vw, 1.375rem);
 }
 
-/* Motion tokens — canonical easing + durations for every micro-interaction. */
+/* Motion tokens — unchanged. Canonical easing + durations. */
 :root {
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --dur-fast: 120ms;
@@ -28,25 +72,38 @@
   --dur-slow: 280ms;
 }
 
-/* Dark mode */
+/* ─── DARK MODE ──────────────────────────────────────────
+   Editorial thesis reversal: ink becomes the canvas, cream becomes the text,
+   viral orange stays as the accent. No muddy navy — just the light palette
+   inverted so dark-mode pages still feel like the same magazine after hours. */
 html.dark {
   color-scheme: dark;
-  --color-canvas: #0b1220;
-  --color-surface: #111a2e;
-  --color-ink: #e7eef7;
-  --color-ink-secondary: #a3b3c7;
-  --color-ink-muted: #64748b;
-  --color-line: #1e293b;
-  --color-line-light: #2a3547;
-  --color-blueprint: #fb923c;
-  --color-blueprint-light: rgba(251, 146, 60, 0.15);
-  --color-blueprint-dark: #f97316;
-  --color-danger: #f87171;
-  --color-danger-light: rgba(248, 113, 113, 0.15);
-  --color-success: #34d399;
-  --color-success-light: rgba(52, 211, 153, 0.15);
-  --color-warning: #fbbf24;
-  --color-warning-light: rgba(251, 191, 36, 0.15);
+  --color-cream:      #0A0A0A;   /* canvas = ink */
+  --color-paper:      #151515;   /* slightly-raised surfaces */
+  --color-ink:        #F3EEE2;   /* text = cream */
+  --color-ink-soft:   #EDE6D4;
+  --color-muted:      #9A938B;
+  --color-rule:       rgba(243, 238, 226, 0.14);
+
+  --color-viral:      #F07040;   /* slightly softened for dark-field readability */
+  --color-viral-soft: #F4B183;
+
+  --color-danger:       #F07777;
+  --color-danger-light: rgba(240, 119, 119, 0.18);
+  --color-success:      #2FB37A;
+  --color-success-light: rgba(47, 179, 122, 0.18);
+  --color-warning:      #E3A15A;
+  --color-warning-light: rgba(227, 161, 90, 0.18);
+
+  --color-canvas:          var(--color-cream);
+  --color-surface:         var(--color-paper);
+  --color-ink-secondary:   var(--color-muted);
+  --color-ink-muted:       #7A736B;
+  --color-line:            rgba(243, 238, 226, 0.14);
+  --color-line-light:      rgba(243, 238, 226, 0.08);
+  --color-blueprint:       var(--color-viral);
+  --color-blueprint-light: rgba(240, 112, 64, 0.18);
+  --color-blueprint-dark:  #E3561E;
 }
 
 html, body {
@@ -55,61 +112,187 @@ html, body {
 }
 
 body {
-  background-color: var(--color-canvas);
+  background-color: var(--color-cream);
   color: var(--color-ink);
-  background-image:
-    linear-gradient(rgba(249, 115, 22, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
-  background-size: 24px 24px;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  position: relative;
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html.dark body {
-  background-image:
-    linear-gradient(rgba(251, 146, 60, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(251, 146, 60, 0.05) 1px, transparent 1px);
+/* ─── GRAIN OVERLAY ──────────────────────────────────────
+   The single most important cheat-code for making a flat digital surface
+   feel printed. SVG-noise ::before, multiply blend, 0.06 opacity.
+   Never crank the opacity past 0.08. Kept global — applied via `body::before`. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+html.dark body::before {
+  opacity: 0.08;
+  mix-blend-mode: screen;
 }
 
+/* Every direct body child sits above the grain overlay. */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Explicit opt-in utility for dark thesis sections (mirrors design.md §6). */
+.grain {
+  position: relative;
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+/* ─── TYPOGRAPHY UTILITIES ───────────────────────────── */
+.serif        { font-family: var(--font-serif); letter-spacing: -0.015em; font-weight: 400; }
+.serif-italic { font-family: var(--font-serif); font-style: italic; letter-spacing: -0.02em; font-weight: 400; }
+.mono         { font-family: var(--font-mono); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+
+/* The magazine-issue eyebrow pattern: 1px × 40px accent bar + mono label. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--color-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  line-height: 1;
+}
+.eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 2.5rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.eyebrow-plain {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: var(--color-muted);
+}
+
+/* Tabular numerals for ledger rows, progress readouts, and metrics. */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ─── HIGHLIGHT CHIP ────────────────────────────────────── */
+.highlight,
+.highlight-cream,
+.highlight-ink {
+  padding: 0.02em 0.3em 0.08em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  display: inline-block;
+  white-space: nowrap;
+}
+.highlight-hero  { transform: rotate(-0.3deg); }
+.highlight       { background: var(--color-viral); color: var(--color-ink); }
+.highlight-cream { background: var(--color-cream); color: var(--color-ink); border: 1px solid var(--color-ink); }
+.highlight-ink   { background: var(--color-ink); color: var(--color-cream); }
+
+.strike { position: relative; display: inline-block; white-space: nowrap; }
+.strike::after {
+  content: "";
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  top: 52%;
+  height: 0.14em;
+  background: var(--color-viral);
+  transform: rotate(-2deg);
+  transform-origin: center;
+}
+
+/* ─── RULED DIVIDERS ────────────────────────────────────── */
+.rule-top    { border-top: 1px solid var(--color-rule); }
+.rule-bottom { border-bottom: 1px solid var(--color-rule); }
+
+/* ─── FORM INPUTS ───────────────────────────────────────── */
+/* `.input` keeps its bordered treatment for dense forms (Expenses ledger etc.). */
 .input {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--color-line);
   border-radius: 0.375rem;
   font-size: 0.875rem;
-  background: var(--color-canvas);
+  background: var(--color-paper);
   color: var(--color-ink);
   outline: none;
   transition: border-color var(--dur-fast) var(--ease-out-expo);
+  font-family: var(--font-sans);
 }
+.input:focus { border-color: var(--color-viral); }
+.input::placeholder { color: var(--color-ink); opacity: 0.35; }
 
-.input:focus {
-  border-color: var(--color-ink-muted);
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
+/* `.input-underline` — the editorial underline input pattern. No box, just a
+   1px hairline that flips to orange on focus. Serif-italic placeholder to
+   match the italic-as-emphasis motif. */
+.input-underline {
+  padding: 0.6rem 0;
+  border: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
   background: transparent;
+  color: var(--color-ink);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: clamp(1rem, calc(0.95rem + 0.4vw), 1.25rem);
+  outline: none;
+  width: 100%;
+  transition: border-color var(--dur-base) var(--ease-out-expo);
+}
+.input-underline:focus { border-bottom-color: var(--color-viral); }
+.input-underline::placeholder {
+  color: color-mix(in srgb, var(--color-ink) 30%, transparent);
+  font-style: italic;
 }
 
+/* Scrollbars — editorial weight. */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-line);
+  background: color-mix(in srgb, var(--color-ink) 20%, transparent);
   border-radius: 3px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-ink-muted);
+  background: color-mix(in srgb, var(--color-ink) 35%, transparent);
 }
 
 ::selection {
-  background: var(--color-blueprint-light);
+  background: var(--color-viral);
   color: var(--color-ink);
 }
 
-/* ─── Micro-interaction layer ────────────────────────────── */
+/* ─── GLOBAL FOCUS-VISIBLE RING ─────────────────────────
+   Orange, 2px, 3px offset. Quiet on default focus (mouse clicks) because it
+   targets `:focus-visible`, loud on keyboard navigation where it matters. */
+:where(a, button, input, textarea, select, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid var(--color-viral);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ─── MICRO-INTERACTION LAYER (unchanged from baseline) ─ */
 
 /* A. Button press haptic echo */
 button:not(:disabled) {
@@ -119,9 +302,7 @@ button:not(:disabled) {
               border-color var(--dur-fast) var(--ease-out-expo),
               box-shadow var(--dur-fast) var(--ease-out-expo);
 }
-button:not(:disabled):active {
-  transform: scale(0.985);
-}
+button:not(:disabled):active { transform: scale(0.985); }
 
 /* B. Card hover lift — opt-in */
 .card-hover {
@@ -132,69 +313,49 @@ button:not(:disabled):active {
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 18px -8px rgba(10, 10, 10, 0.18);
 }
 html.dark .card-hover:hover {
-  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 18px -8px rgba(0, 0, 0, 0.6);
 }
-
-/* C. Focus rings — intentionally minimal.
-   The earlier soft-glow ring rendered as a thick orange halo around empty
-   inputs and read as a floating box. We fall back to each element's own
-   focus treatment (e.g. `.input:focus` shifts border-color) plus the
-   browser's native `:focus-visible` outline for keyboard users on
-   un-styled elements. Keep it quiet. */
 
 /* D. Route fade */
 @keyframes route-fade-in {
   from { opacity: 0; transform: translateY(2px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.route-fade {
-  animation: route-fade-in var(--dur-base) var(--ease-out-expo);
-}
+.route-fade { animation: route-fade-in var(--dur-base) var(--ease-out-expo); }
 
 /* E. List stagger */
 @keyframes stagger-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.stagger-in {
-  animation: stagger-in 240ms var(--ease-out-expo) both;
-}
+.stagger-in { animation: stagger-in 240ms var(--ease-out-expo) both; }
 
-/* F. Chevron/disclosure rotation smoothness — utility class */
-.chev-toggle {
-  transition: transform var(--dur-base) var(--ease-out-expo);
-}
+/* F. Chevron/disclosure rotation */
+.chev-toggle { transition: transform var(--dur-base) var(--ease-out-expo); }
 
 /* G. Modal / sheet enter */
 @keyframes sheet-in {
   from { opacity: 0; transform: scale(0.97); }
   to   { opacity: 1; transform: scale(1); }
 }
-.sheet-in {
-  animation: sheet-in var(--dur-base) var(--ease-out-expo);
-}
+.sheet-in { animation: sheet-in var(--dur-base) var(--ease-out-expo); }
 
 /* H. Toast enter */
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.toast-in {
-  animation: toast-in var(--dur-base) var(--ease-out-expo);
-}
+.toast-in { animation: toast-in var(--dur-base) var(--ease-out-expo); }
 
 /* I. Streak flame breath */
 @keyframes flame-breath {
   0%, 100% { transform: scale(1); opacity: 1; }
   50%      { transform: scale(1.08); opacity: 0.92; }
 }
-.flame-breath {
-  animation: flame-breath 4s ease-in-out infinite;
-  transform-origin: center;
-}
+.flame-breath { animation: flame-breath 4s ease-in-out infinite; transform-origin: center; }
 
 /* J. Checkbox tick pop */
 @keyframes tick-pop {
@@ -202,9 +363,7 @@ html.dark .card-hover:hover {
   60%  { transform: scale(1.05); opacity: 1; }
   to   { transform: scale(1); opacity: 1; }
 }
-.tick-pop {
-  animation: tick-pop 200ms var(--ease-out-expo);
-}
+.tick-pop { animation: tick-pop 200ms var(--ease-out-expo); }
 
 /* K. Invalid-drop shake */
 @keyframes shake-x {
@@ -212,14 +371,11 @@ html.dark .card-hover:hover {
   25%      { transform: translateX(-2px); }
   75%      { transform: translateX(2px); }
 }
-.shake-x {
-  animation: shake-x 180ms var(--ease-out-expo);
-}
+.shake-x { animation: shake-x 180ms var(--ease-out-expo); }
 
-/* L. Sidebar active nav indicator (pseudo-element approach) */
-.nav-item {
-  position: relative;
-}
+/* L. Sidebar active nav indicator (pseudo-element). Rebuilt to be wider and
+   hit in the viral orange directly rather than the legacy token. */
+.nav-item { position: relative; }
 .nav-item::before {
   content: "";
   position: absolute;
@@ -227,7 +383,7 @@ html.dark .card-hover:hover {
   top: 50%;
   width: 2px;
   height: 60%;
-  background: var(--color-blueprint);
+  background: var(--color-viral);
   border-radius: 2px;
   transform: translateY(-50%) scaleY(0);
   transform-origin: center;
@@ -240,23 +396,49 @@ html.dark .card-hover:hover {
   opacity: 1;
 }
 
-/* Existing slide-in-right kept for back-compat */
+/* M. Hero entrance — CSS-only so the landing bundle never needs framer-motion. */
+@keyframes heroRise {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero-rise {
+  animation: heroRise 900ms var(--ease-out-expo) both;
+  will-change: opacity, transform;
+}
+.hero-rise-delay {
+  animation-delay: 250ms;
+  animation-duration: 1000ms;
+}
+
+/* N. Stream waiting pulse — solves "stuck at 92%" without lying about progress. */
+@keyframes streamWait {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+.stream-waiting { animation: streamWait 1.4s ease-in-out infinite; }
+
+/* O. Marquee loop (reserved for future editorial bands). */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: inline-flex;
+  gap: 3rem;
+  animation: marquee 40s linear infinite;
+  will-change: transform;
+}
+
+/* Legacy slide-in-right — still used by music player. */
 @keyframes slide-in-right {
-  from {
-    transform: translateX(100%);
-    opacity: 0.8;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
+  from { transform: translateX(100%); opacity: 0.8; }
+  to   { transform: translateX(0);    opacity: 1; }
 }
+.animate-slide-in { animation: slide-in-right 0.25s var(--ease-out-expo); }
 
-.animate-slide-in {
-  animation: slide-in-right 0.25s var(--ease-out-expo);
-}
-
-/* Reduced motion — disable everything. */
+/* ─── REDUCED MOTION ─────────────────────────────────────
+   The single global guard every other rule flows through. Mirrors
+   design.md §8. When porting, copy verbatim. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -264,4 +446,6 @@ html.dark .card-hover:hover {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .marquee-track  { animation: none; }
+  .stream-waiting { animation: none; opacity: 1; }
 }

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Loader2, AlertTriangle, RefreshCw } from 'lucide-react'
 import { StoreProvider, useStore } from './store'
@@ -17,49 +18,25 @@ import { EditorOutput } from './components/EditorOutput'
 import { Settings } from './components/Settings'
 import { AdminLock } from './components/AdminLock'
 
-/** Renders a dismissible banner when the initial data fetch failed. */
+/** Renders a dismissible banner when the initial data fetch failed.
+ *  Editorial style: ink bar with cream text + mono eyebrow + viral retry button. */
 function FetchErrorBanner() {
   const { fetchError, retryFetch } = useStore()
   if (!fetchError) return null
   return (
     <div
       role="alert"
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 9000,
-        background: '#dc2626',
-        color: '#fff',
-        padding: '0.625rem 1rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        fontSize: '0.875rem',
-        justifyContent: 'center',
-      }}
+      className="fixed inset-x-0 top-0 z-[9000] flex items-center justify-center gap-3 bg-ink px-4 py-2.5 text-[0.85rem] text-cream"
     >
-      <AlertTriangle size={16} />
-      <span>{fetchError}</span>
+      <AlertTriangle size={14} className="text-viral" />
+      <span className="mono text-[0.62rem] uppercase tracking-[0.28em] text-viral">fetch failed</span>
+      <span className="truncate">{fetchError}</span>
       <button
         onClick={retryFetch}
-        style={{
-          background: 'rgba(255,255,255,0.2)',
-          border: '1px solid rgba(255,255,255,0.4)',
-          color: '#fff',
-          borderRadius: '0.25rem',
-          padding: '0.2rem 0.6rem',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.3rem',
-          fontSize: '0.8rem',
-          marginLeft: '0.5rem',
-        }}
+        className="mono ml-2 inline-flex items-center gap-1.5 rounded-sm border border-cream/40 px-2.5 py-1 text-[0.7rem] uppercase tracking-[0.22em] text-cream hover:border-viral hover:text-viral"
       >
-        <RefreshCw size={12} />
-        Retry
+        <RefreshCw size={11} />
+        retry
       </button>
     </div>
   )
@@ -69,22 +46,24 @@ function AppContent() {
   const { user, authLoading, dataLoading } = useStore()
   const { showToast } = useToast()
 
-  // Global handler: any unhandled promise rejection from store throws
-  // bubbles to window. Catch and show a toast so errors never silently vanish.
-  if (typeof window !== 'undefined') {
-    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+  // Global safety net for unhandled rejections from the store layer.
+  // Registered once per mount; previous impl reassigned on every render.
+  useEffect(() => {
+    const handler = (event: PromiseRejectionEvent) => {
       const msg: string = event.reason instanceof Error
         ? event.reason.message
         : String(event.reason ?? 'Unknown error')
       console.error('[app] Unhandled rejection:', event.reason)
-      showToast(`Save failed: ${msg}`)
+      showToast(`save failed: ${msg}`)
     }
-  }
+    window.addEventListener('unhandledrejection', handler)
+    return () => window.removeEventListener('unhandledrejection', handler)
+  }, [showToast])
 
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-canvas">
-        <Loader2 size={24} className="text-blueprint animate-spin" />
+        <Loader2 size={24} className="text-viral animate-spin" />
       </div>
     )
   }
@@ -94,8 +73,8 @@ function AppContent() {
   if (dataLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-canvas gap-3">
-        <Loader2 size={24} className="text-blueprint animate-spin" />
-        <p className="text-[11px] uppercase tracking-[0.2em] text-ink-muted">Loading your data...</p>
+        <Loader2 size={24} className="text-viral animate-spin" />
+        <p className="mono text-[0.68rem] uppercase tracking-[0.28em] text-muted">loading your data</p>
       </div>
     )
   }
