@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Music, Play, Pause, X, ChevronRight, Maximize2, Minimize2 } from 'lucide-react'
 import { STATIONS, stationEmbedUrl, type Station } from '../lib/stations'
+import { cn } from '../lib/cn'
 
 // Iframe delegation: a plain <iframe> pointed at a YouTube Live embed URL.
 // The iframe owns its origin's CORS/CSP, which is why this architecture
@@ -47,7 +48,6 @@ export function MusicPlayer() {
   const [playing, setPlaying] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showVideo, setShowVideo] = useState(false)
-  // iframe key — bumped whenever we want to force remount (station change while playing)
   const [iframeKey, setIframeKey] = useState(0)
 
   const station: Station = STATIONS.find(s => s.id === stationId) ?? STATIONS[0]
@@ -78,14 +78,13 @@ export function MusicPlayer() {
     if (id === stationId && playing) return
     setStationId(id)
     setError(null)
-    // Force a fresh iframe mount so autoplay fires with the new URL.
     setIframeKey(k => k + 1)
     setPlaying(true)
   }
 
   return (
     <>
-      {/* Iframe — audio source. Hidden offscreen by default; visible when expanded. */}
+      {/* Offscreen iframe — hidden audio source when expanded is closed or video hidden. */}
       {playing && !showVideo && (
         <iframe
           key={iframeKey}
@@ -94,7 +93,7 @@ export function MusicPlayer() {
           allow="autoplay; encrypted-media; picture-in-picture"
           referrerPolicy="strict-origin-when-cross-origin"
           allowFullScreen
-          onError={() => { setError('Stream paused. Try another station.'); setPlaying(false) }}
+          onError={() => { setError('stream paused. try another station.'); setPlaying(false) }}
           style={{ position: 'fixed', left: '-9999px', top: 0, width: 320, height: 180, border: 0 }}
         />
       )}
@@ -103,40 +102,47 @@ export function MusicPlayer() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          aria-label="Open music player"
-          title="Music (press M to play/pause)"
-          className="p-2 rounded-full bg-surface border border-line text-ink-secondary hover:text-ink hover:border-ink-muted transition-colors shadow-sm relative"
+          aria-label="open music player"
+          title="music (press m to play/pause)"
+          className="relative rounded-full border border-ink/15 bg-paper/80 p-2.5 text-muted transition-colors hover:border-viral hover:text-viral"
         >
-          <Music size={16} />
+          <Music size={14} />
           {playing && (
-            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blueprint animate-pulse" />
+            <span
+              aria-hidden="true"
+              className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-viral animate-pulse"
+            />
           )}
         </button>
       )}
 
       {/* Expanded panel */}
       {open && (
-        <div className="w-72 bg-surface border border-line rounded-xl shadow-lg animate-slide-in overflow-hidden">
-          <div className="flex items-center justify-between px-3 py-2 border-b border-line-light">
+        <div className="animate-slide-in w-72 overflow-hidden rule-top rule-bottom border-ink/10 bg-paper shadow-[0_8px_24px_-12px_rgba(10,10,10,0.4)]">
+          <div className="flex items-center justify-between border-b border-ink/10 px-4 py-2.5">
             <div className="flex items-center gap-2">
-              <Music size={14} className="text-blueprint" />
-              <p className="text-[11px] uppercase tracking-[0.15em] text-ink-secondary">
-                {playing ? station.name : 'Music'}
+              <Music size={12} className="text-viral" />
+              <p className="mono text-[0.6rem] uppercase tracking-[0.28em] text-muted">
+                {playing ? station.name.toLowerCase() : 'music'}
               </p>
             </div>
-            <button onClick={() => setOpen(false)} aria-label="Close player"
-              className="p-1 text-ink-muted hover:text-ink">
-              <X size={14} />
+            <button
+              onClick={() => setOpen(false)}
+              aria-label="close player"
+              className="p-1 text-muted hover:text-ink"
+            >
+              <X size={13} />
             </button>
           </div>
 
-          <div className="p-3">
-            <p className="text-sm font-medium text-ink truncate">{station.name}</p>
-            <p className="text-[11px] text-ink-muted truncate">{station.vibe}</p>
+          <div className="p-4">
+            <p className="serif truncate text-[1rem] leading-tight text-ink">{station.name}</p>
+            <p className="mono mt-1 truncate text-[0.58rem] uppercase tracking-[0.26em] text-muted">
+              {station.vibe}
+            </p>
 
-            {/* Visible video mode — inline iframe when expanded */}
             {playing && showVideo && (
-              <div className="mt-3 rounded-lg overflow-hidden border border-line bg-black">
+              <div className="mt-3 overflow-hidden bg-ink">
                 <iframe
                   key={iframeKey}
                   title={`music-video-${station.id}`}
@@ -149,40 +155,66 @@ export function MusicPlayer() {
               </div>
             )}
 
-            <div className="mt-3 flex items-center gap-2">
-              <button onClick={toggle}
-                title="Toggle (shortcut: M)"
-                className="p-2 rounded-full bg-blueprint text-white hover:bg-blueprint-dark transition-colors">
-                {playing ? <Pause size={16} /> : <Play size={16} />}
+            <div className="mt-4 flex items-center gap-2">
+              <button
+                onClick={toggle}
+                aria-label={playing ? 'pause' : 'play'}
+                title="toggle (shortcut: m)"
+                className="rounded-full bg-ink p-2.5 text-cream transition-colors hover:bg-viral hover:text-ink"
+              >
+                {playing ? <Pause size={14} /> : <Play size={14} />}
               </button>
               <button
                 onClick={() => setShowVideo(v => !v)}
-                title={showVideo ? 'Hide video' : 'Show video'}
-                className="p-2 rounded-full border border-line text-ink-secondary hover:text-ink hover:border-ink-muted transition-colors"
+                aria-label={showVideo ? 'hide video' : 'show video'}
+                title={showVideo ? 'hide video' : 'show video'}
+                className="rounded-full border border-ink/15 p-2 text-muted transition-colors hover:border-viral hover:text-viral"
               >
-                {showVideo ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {showVideo ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
               </button>
-              <p className="text-[10px] text-ink-muted flex-1">
-                <kbd className="px-1 py-0.5 border border-line rounded text-[9px]">M</kbd> toggles
+              <p className="mono ml-auto text-[0.56rem] uppercase tracking-[0.26em] text-muted/80">
+                <kbd className="border border-ink/20 px-1 py-0.5 text-[0.55rem] text-muted">m</kbd> toggles
               </p>
             </div>
 
-            {error && <p className="mt-2 text-[11px] text-ink-muted">{error}</p>}
+            {error && (
+              <p role="alert" className="mono mt-3 text-[0.6rem] uppercase tracking-[0.24em] text-muted">
+                {error}
+              </p>
+            )}
 
-            <div className="mt-3 pt-3 border-t border-line-light">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-2">Stations</p>
-              <div className="space-y-0.5 max-h-48 overflow-auto">
-                {STATIONS.map(s => (
-                  <button key={s.id} onClick={() => pickStation(s.id)}
-                    className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-left text-[12px] transition-colors ${
-                      s.id === stationId ? 'bg-blueprint-light text-blueprint' : 'text-ink-secondary hover:bg-canvas'
-                    }`}>
-                    <ChevronRight size={12}
-                      className={s.id === stationId ? 'opacity-100' : 'opacity-0'} />
-                    <span className="truncate flex-1">{s.name}</span>
-                    <span className="text-[10px] text-ink-muted">{s.vibe}</span>
-                  </button>
-                ))}
+            <div className="mt-4 border-t border-ink/10 pt-4">
+              <p className="mono mb-3 text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+                stations
+              </p>
+              <div className="max-h-48 space-y-0 overflow-auto divide-y divide-ink/5">
+                {STATIONS.map(s => {
+                  const active = s.id === stationId
+                  return (
+                    <button
+                      key={s.id}
+                      onClick={() => pickStation(s.id)}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-2 py-2 text-left transition-colors hover:bg-cream',
+                        active && 'bg-cream',
+                      )}
+                    >
+                      <ChevronRight
+                        size={11}
+                        className={cn('shrink-0 text-viral', !active && 'opacity-0')}
+                      />
+                      <span className={cn(
+                        'serif flex-1 truncate text-[0.9rem]',
+                        active ? 'text-viral' : 'text-ink',
+                      )}>
+                        {s.name}
+                      </span>
+                      <span className="mono text-[0.54rem] uppercase tracking-[0.26em] text-muted">
+                        {s.vibe}
+                      </span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           </div>
