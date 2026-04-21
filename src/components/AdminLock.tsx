@@ -1,5 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react'
 import { Lock } from 'lucide-react'
+import { cn } from '../lib/cn'
 
 // Simple app-level passcode gate. Both admins share one login, so this is a
 // soft barrier on sensitive surfaces (Finances, Expenses) — NOT a security
@@ -38,20 +39,21 @@ export function useUnlockState() {
   return unlocked
 }
 
-// Copy is intentionally warm & ego-safe — the PA shares this login, and the
-// earlier phrasing ("Owner passcode required", "Admin access required") read
-// as distrustful. These variants nod to the gate without making anyone feel
-// shut out.
+// Copy intentionally warm. The PA shares this login; earlier phrasing
+// ("Owner passcode required") read as distrustful. Editorial lowercasing
+// on top of that stays in tone with design.md §9.
 const COPY = {
   inline: {
-    heading: 'Just for the boss',
-    subline: 'Numbers nerd-out — nothing to see here ✦',
-    cta: 'Verify admin',
+    eyebrow: 'admin only',
+    heading: 'just for the boss',
+    subline: "numbers nerd-out. nothing to see here.",
+    cta: 'verify admin',
   },
   page: {
-    heading: 'Finance lounge',
-    subline: "This corner's the owner's playground.",
-    cta: 'Verify admin',
+    eyebrow: 'admin only',
+    heading: 'finance lounge',
+    subline: "this corner's the owner's playground.",
+    cta: 'verify admin',
   },
 }
 
@@ -65,7 +67,6 @@ export function AdminLock({ children, variant = 'page' }: {
   const [input, setInput] = useState('')
   const [error, setError] = useState(false)
 
-  // Reset reveal state when lock state flips
   useEffect(() => {
     if (!unlocked) { setExpanded(false); setInput(''); setError(false) }
   }, [unlocked])
@@ -85,22 +86,33 @@ export function AdminLock({ children, variant = 'page' }: {
   const copy = variant === 'inline' ? COPY.inline : COPY.page
 
   const Card = (
-    <div className={`bg-surface border border-line rounded-xl shadow ${variant === 'inline' ? 'p-4 max-w-xs' : 'p-6 max-w-sm'} text-center w-full`}>
-      <div className={`mx-auto rounded-lg bg-blueprint-light/60 flex items-center justify-center mb-2 ${variant === 'inline' ? 'w-8 h-8' : 'w-10 h-10'}`}>
-        <Lock size={variant === 'inline' ? 14 : 16} className="text-blueprint/80" />
+    <div
+      className={cn(
+        'relative w-full rule-top rule-bottom border-ink/10 bg-paper/80 text-center backdrop-blur-sm',
+        variant === 'inline' ? 'max-w-xs px-6 py-6' : 'max-w-sm px-8 py-10',
+      )}
+    >
+      <div
+        className={cn(
+          'mx-auto mb-4 flex items-center justify-center rounded-full bg-viral/15',
+          variant === 'inline' ? 'h-8 w-8' : 'h-10 w-10',
+        )}
+      >
+        <Lock size={variant === 'inline' ? 13 : 15} className="text-viral" />
       </div>
-      <p className={`font-medium text-ink ${variant === 'inline' ? 'text-[12px]' : 'text-sm'}`}>{copy.heading}</p>
-      <p className={`text-ink-muted ${variant === 'inline' ? 'text-[10px] mt-0.5' : 'text-[12px] mt-1'}`}>{copy.subline}</p>
+      <p className="mono text-[0.58rem] uppercase tracking-[0.28em] text-viral">{copy.eyebrow}</p>
+      <p className="serif mt-3 text-[1.3rem] leading-tight text-ink">{copy.heading}</p>
+      <p className="mono mt-2 text-[0.62rem] uppercase tracking-[0.24em] text-muted">{copy.subline}</p>
 
       {!expanded ? (
         <button
           onClick={() => setExpanded(true)}
-          className="mt-3 text-[11px] uppercase tracking-wide text-ink-muted hover:text-blueprint hover:underline transition-colors"
+          className="mono mt-5 border-b border-ink/20 pb-0.5 text-[0.66rem] uppercase tracking-[0.24em] text-muted transition-colors hover:border-viral hover:text-viral"
         >
           {copy.cta}
         </button>
       ) : (
-        <div className="mt-3">
+        <div className="mt-5">
           <input
             autoFocus
             type="password"
@@ -109,20 +121,27 @@ export function AdminLock({ children, variant = 'page' }: {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') submit() }}
             placeholder="••••"
-            className={`w-full px-2 py-1.5 text-center tracking-[0.3em] bg-canvas border rounded text-sm transition-colors ${
-              error ? 'border-ink-muted' : 'border-line focus:border-ink-muted'
-            }`}
+            className={cn(
+              'mono w-full border-b bg-transparent py-2 text-center text-[1rem] tracking-[0.4em] text-ink outline-none placeholder:text-ink/30 transition-colors',
+              error ? 'border-danger' : 'border-ink/20 focus:border-viral',
+            )}
           />
-          {error && <p className="mt-1 text-ink-muted text-[11px]">Try again</p>}
-          <button onClick={submit}
-            className={`mt-2 w-full py-1.5 ${variant === 'inline' ? 'text-[12px]' : 'text-sm'} bg-blueprint text-white rounded hover:bg-blueprint-dark`}>
-            Unlock
+          {error && (
+            <p className="mono mt-2 text-[0.58rem] uppercase tracking-[0.24em] text-danger">
+              try again
+            </p>
+          )}
+          <button
+            onClick={submit}
+            className="mono mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+          >
+            unlock
           </button>
           <button
             onClick={() => { setExpanded(false); setInput(''); setError(false) }}
-            className="mt-1.5 text-[11px] text-ink-muted hover:text-ink"
+            className="mono mt-3 text-[0.6rem] uppercase tracking-[0.24em] text-muted hover:text-ink"
           >
-            Cancel
+            cancel
           </button>
         </div>
       )}
@@ -132,7 +151,7 @@ export function AdminLock({ children, variant = 'page' }: {
   if (variant === 'inline') {
     return (
       <div className="relative">
-        <div className="pointer-events-none blur-md opacity-40 select-none">{children}</div>
+        <div className="pointer-events-none select-none opacity-40 blur-md">{children}</div>
         <div className="absolute inset-0 flex items-center justify-center p-4">{Card}</div>
       </div>
     )
@@ -140,10 +159,10 @@ export function AdminLock({ children, variant = 'page' }: {
 
   return (
     <div className="relative h-full">
-      <div className="absolute inset-0 pointer-events-none blur-md opacity-40 select-none overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 select-none overflow-hidden opacity-40 blur-md">
         {children}
       </div>
-      <div className="relative z-10 h-full flex items-center justify-center p-6">{Card}</div>
+      <div className="relative z-10 flex h-full items-center justify-center p-6">{Card}</div>
     </div>
   )
 }

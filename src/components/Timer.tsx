@@ -60,47 +60,50 @@ export function Timer() {
     : 0
 
   return (
-    <div className="flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2">
+    <div className="flex items-center gap-3 border border-ink/15 px-3 py-1.5">
       {!started ? (
         <>
-          <Clock size={14} className="text-ink-muted" />
+          <Clock size={13} className="text-muted" />
           <input
             type="number"
             value={duration}
             onChange={e => setDuration(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-12 text-sm text-ink bg-transparent border-none text-center focus:outline-none tabular-nums"
+            className="mono w-10 border-none bg-transparent text-center text-[0.85rem] text-ink outline-none tnum"
             min={1}
           />
-          <span className="text-[10px] text-ink-muted uppercase tracking-wider">min</span>
+          <span className="mono text-[0.58rem] uppercase tracking-[0.28em] text-muted">min</span>
           <button
             onClick={start}
-            className="p-1.5 rounded bg-blueprint text-white hover:bg-blueprint-dark transition-colors"
+            aria-label="start timer"
+            className="rounded-full bg-ink p-1.5 text-cream transition-colors hover:bg-viral hover:text-ink"
           >
-            <Play size={12} />
+            <Play size={11} />
           </button>
         </>
       ) : (
         <>
-          <div className="relative w-16 h-1.5 bg-canvas rounded-full overflow-hidden">
+          <div className="relative h-[3px] w-16 overflow-hidden bg-ink/10">
             <div
-              className="absolute inset-y-0 left-0 bg-blueprint rounded-full transition-all duration-1000"
+              className="absolute inset-y-0 left-0 bg-viral transition-all duration-1000"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <span className="text-sm text-ink tabular-nums font-medium min-w-[3.5rem] text-center">
+          <span className="mono min-w-[3.5rem] text-center text-[0.85rem] font-medium text-ink tnum">
             {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
           </span>
           <button
             onClick={running ? () => setRunning(false) : start}
-            className="p-1.5 rounded bg-blueprint text-white hover:bg-blueprint-dark transition-colors"
+            aria-label={running ? 'pause' : 'resume'}
+            className="rounded-full bg-ink p-1.5 text-cream transition-colors hover:bg-viral hover:text-ink"
           >
-            {running ? <Pause size={12} /> : <Play size={12} />}
+            {running ? <Pause size={11} /> : <Play size={11} />}
           </button>
           <button
             onClick={reset}
-            className="p-1.5 rounded text-ink-muted hover:text-danger transition-colors"
+            aria-label="reset"
+            className="p-1 text-muted transition-colors hover:text-danger"
           >
-            <RotateCcw size={12} />
+            <RotateCcw size={11} />
           </button>
         </>
       )}

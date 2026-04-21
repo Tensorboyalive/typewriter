@@ -6,11 +6,11 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      title={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-      className="p-2 rounded-full bg-surface border border-line text-ink-secondary hover:text-ink hover:border-ink-muted transition-colors shadow-sm"
+      aria-label={theme === 'dark' ? 'switch to light mode' : 'switch to dark mode'}
+      title={theme === 'dark' ? 'light mode' : 'dark mode'}
+      className="rounded-full border border-ink/15 bg-paper/80 p-2.5 text-muted transition-colors hover:border-viral hover:text-viral"
     >
-      {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+      {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
     </button>
   )
 }

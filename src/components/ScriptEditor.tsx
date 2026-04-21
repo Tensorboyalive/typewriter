@@ -7,6 +7,7 @@ import { Select } from './Select'
 import { Timer } from './Timer'
 import { LinkifiedText } from './LinkifiedText'
 import { exportScriptToPdf } from '../lib/exportPdf'
+import { cn } from '../lib/cn'
 
 export function ScriptEditor() {
   const { id } = useParams()
@@ -29,14 +30,16 @@ export function ScriptEditor() {
 
   if (!project) {
     return (
-      <div className="p-8">
-        <p className="text-ink-muted">Project not found.</p>
+      <div className="mx-auto max-w-2xl px-6 py-16 md:px-10">
         <button
           onClick={() => navigate('/projects')}
-          className="mt-2 text-blueprint text-sm hover:underline"
+          className="mono inline-flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.24em] text-muted hover:text-viral"
         >
-          &larr; Back to projects
+          <ArrowLeft size={13} /> back to pipeline
         </button>
+        <p className="mono mt-8 text-[0.72rem] uppercase tracking-[0.24em] text-muted">
+          project not found.
+        </p>
       </div>
     )
   }
@@ -54,34 +57,33 @@ export function ScriptEditor() {
     : 0
 
   return (
-    <div className="h-full flex flex-col bg-canvas">
-      {/* Header bar */}
-      <div className="flex items-center justify-between px-8 py-4 md:pr-40 border-b border-line bg-surface/90 backdrop-blur-sm">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+    <div className="flex h-full flex-col bg-cream">
+      {/* Top rail: back + title + status + format chips + actions */}
+      <div className="rule-bottom border-ink/10 bg-paper/70 px-6 py-4 backdrop-blur-sm md:px-10 md:pr-36">
+        <div className="flex items-start gap-4">
           <button
             onClick={() => navigate('/projects')}
-            className="p-2 rounded-md hover:bg-canvas text-ink-secondary transition-colors shrink-0"
+            aria-label="back to pipeline"
+            className="mt-2 p-1 text-muted hover:text-viral shrink-0"
           >
             <ArrowLeft size={18} />
           </button>
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <input
               value={project.title}
               onChange={e => updateProject(project.id, { title: e.target.value })}
-              className="text-xl font-light text-ink bg-transparent border-none focus:outline-none w-full"
-              placeholder="Project title..."
+              className="serif w-full bg-transparent text-[clamp(1.5rem,calc(1rem+1vw),2.25rem)] leading-[1.05] tracking-[-0.02em] text-ink outline-none placeholder:text-ink/30"
+              placeholder="untitled project"
             />
-            <div className="flex items-center gap-3 mt-1 flex-wrap">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <Select
                 value={project.status}
-                onChange={val =>
-                  updateProject(project.id, { status: val as ProjectStatus })
-                }
+                onChange={val => updateProject(project.id, { status: val as ProjectStatus })}
                 options={STATUSES.map(s => ({ value: s.id, label: s.label }))}
                 compact
               />
-              {/* Content-format segmented control */}
-              <div className="flex items-center gap-1">
+              {/* Content-format segmented control — editorial chip treatment */}
+              <div className="flex items-center gap-1.5">
                 {CONTENT_FORMATS.map(f => {
                   const active = project.format === f.id
                   return (
@@ -89,143 +91,139 @@ export function ScriptEditor() {
                       key={f.id}
                       type="button"
                       onClick={() => updateProject(project.id, { format: f.id as ContentFormat })}
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] border transition-colors ${
-                        active
-                          ? 'bg-blueprint-light text-blueprint border-blueprint'
-                          : 'bg-canvas border-line text-ink-secondary hover:border-blueprint/40'
-                      }`}
+                      className={cn(
+                        'mono px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                        active ? 'bg-viral text-ink' : 'text-muted hover:text-ink',
+                      )}
                     >
-                      {f.label}
+                      {f.label.toLowerCase()}
                     </button>
                   )
                 })}
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <Timer />
-          {/* Edit/Read pill — same shape as the Kanban List/Board toggle */}
-          <div className="flex items-center rounded-md border border-line bg-canvas p-0.5">
+          <div className="flex shrink-0 items-start gap-2">
+            <Timer />
+            <div className="flex items-center rounded-full border border-ink/15 p-0.5">
+              <button
+                type="button"
+                onClick={() => setMode('edit')}
+                aria-pressed={mode === 'edit'}
+                className={cn(
+                  'mono inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                  mode === 'edit' ? 'bg-ink text-cream' : 'text-muted hover:text-ink',
+                )}
+              >
+                <Edit3 size={11} /> edit
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode('read')}
+                aria-pressed={mode === 'read'}
+                className={cn(
+                  'mono inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                  mode === 'read' ? 'bg-ink text-cream' : 'text-muted hover:text-ink',
+                )}
+              >
+                <Eye size={11} /> read
+              </button>
+            </div>
             <button
               type="button"
-              onClick={() => setMode('edit')}
-              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
-                mode === 'edit'
-                  ? 'bg-blueprint text-white'
-                  : 'text-ink-muted hover:bg-canvas'
-              }`}
-              aria-pressed={mode === 'edit'}
+              onClick={handleDownloadPdf}
+              disabled={exporting}
+              className="mono inline-flex items-center gap-1.5 border-b border-ink/20 px-1 pb-1 text-[0.62rem] uppercase tracking-[0.24em] text-muted transition-colors hover:border-viral hover:text-viral disabled:opacity-50"
             >
-              <Edit3 size={12} /> Edit
+              <FileDown size={12} /> {exporting ? 'exporting…' : 'download pdf'}
             </button>
             <button
-              type="button"
-              onClick={() => setMode('read')}
-              className={`flex items-center gap-1 rounded px-2 py-1 text-[11px] transition-colors ${
-                mode === 'read'
-                  ? 'bg-blueprint text-white'
-                  : 'text-ink-muted hover:bg-canvas'
-              }`}
-              aria-pressed={mode === 'read'}
+              onClick={() => { deleteProject(project.id); navigate('/projects') }}
+              aria-label="delete project"
+              className="p-2 text-muted hover:text-danger transition-colors"
             >
-              <Eye size={12} /> Read
+              <Trash2 size={15} />
             </button>
           </div>
-          <button
-            type="button"
-            onClick={handleDownloadPdf}
-            disabled={exporting}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-line text-[12px] text-ink-secondary hover:text-blueprint hover:border-blueprint/40 transition-colors disabled:opacity-50"
-          >
-            <FileDown size={14} /> {exporting ? 'Exporting…' : 'Download PDF'}
-          </button>
-          <button
-            onClick={() => {
-              deleteProject(project.id)
-              navigate('/projects')
-            }}
-            className="p-2 rounded-md hover:bg-danger-light text-ink-muted hover:text-danger transition-colors"
-          >
-            <Trash2 size={18} />
-          </button>
         </div>
       </div>
 
-      {/* Inline meta bar — scheduled date, channel, deadline */}
-      <div className="px-8 py-3 border-b border-line bg-surface/60 flex items-center gap-6 flex-wrap">
-        <label className="flex items-center gap-2 text-[11px]">
-          <CalendarClock size={13} className="text-ink-muted" />
-          <span className="uppercase tracking-[0.15em] text-ink-muted">Scheduled</span>
+      {/* Inline meta bar — scheduled / channel / deadline / word count */}
+      <div className="rule-bottom flex flex-wrap items-center gap-x-8 gap-y-3 border-ink/10 bg-paper/30 px-6 py-3 md:px-10">
+        <MetaField icon={CalendarClock} label="scheduled">
           <input
             type="date"
             value={project.scheduled_date?.split('T')[0] ?? ''}
-            onChange={e =>
-              updateProject(project.id, {
-                scheduled_date: e.target.value || null,
-              })
-            }
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
+            onChange={e => updateProject(project.id, { scheduled_date: e.target.value || null })}
+            className="mono bg-transparent text-[0.75rem] text-ink outline-none border-b border-transparent hover:border-ink/20 focus:border-viral tnum"
           />
-        </label>
+        </MetaField>
 
-        <label className="flex items-center gap-2 text-[11px]">
-          <Radio size={13} className="text-ink-muted" />
-          <span className="uppercase tracking-[0.15em] text-ink-muted">Channel</span>
+        <MetaField icon={Radio} label="channel">
           <select
             value={project.channel_id}
             onChange={e => handleChannelChange(e.target.value)}
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
+            className="mono bg-transparent text-[0.75rem] text-ink outline-none border-b border-transparent hover:border-ink/20 focus:border-viral"
           >
             {channels.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
+              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
-        </label>
+        </MetaField>
 
-        <label className="flex items-center gap-2 text-[11px]">
-          <CalendarClock size={13} className="text-ink-muted" />
-          <span className="uppercase tracking-[0.15em] text-ink-muted">Deadline</span>
+        <MetaField icon={CalendarClock} label="deadline">
           <input
             type="date"
             value={project.deadline?.split('T')[0] ?? ''}
-            onChange={e =>
-              updateProject(project.id, {
-                deadline: e.target.value ? new Date(e.target.value).toISOString() : null,
-              })
-            }
-            className="bg-transparent border border-line rounded px-2 py-1 text-ink text-[12px] focus:outline-none focus:border-ink-muted"
+            onChange={e => updateProject(project.id, { deadline: e.target.value ? new Date(e.target.value).toISOString() : null })}
+            className="mono bg-transparent text-[0.75rem] text-ink outline-none border-b border-transparent hover:border-ink/20 focus:border-viral tnum"
           />
-        </label>
+        </MetaField>
 
-        <span className="ml-auto text-[10px] uppercase tracking-[0.15em] text-ink-muted tabular-nums">
+        <span className="mono ml-auto text-[0.6rem] uppercase tracking-[0.26em] text-muted tnum">
           {wordCount} words
         </span>
       </div>
 
-      {/* Script editor — fills remaining viewport */}
+      {/* Script body */}
       <div className="flex-1 overflow-auto">
-        <div className="max-w-4xl mx-auto px-8 py-10 h-full">
+        <div className="mx-auto max-w-[780px] px-6 py-12 md:px-10 md:py-16">
           {mode === 'edit' ? (
             <textarea
               value={project.script}
               onChange={e => updateProject(project.id, { script: e.target.value })}
-              placeholder={`Start writing your script here...\n\nThink about:\n\u2022 Hook — First 3 seconds\n\u2022 Story — The main content\n\u2022 CTA — What should they do?`}
-              className="w-full h-full min-h-[60vh] bg-transparent text-ink leading-relaxed resize-none focus:outline-none text-[16px]"
+              placeholder={`start writing your script here…\n\nthink about:\n\u00B7 hook. first 3 seconds\n\u00B7 story. the main content\n\u00B7 cta. what should they do?`}
+              className="min-h-[60vh] w-full resize-none bg-transparent text-[1.02rem] leading-[1.7] text-ink outline-none placeholder:text-ink/30"
             />
           ) : (
-            <div className="w-full min-h-[60vh] text-ink leading-relaxed text-[16px]">
+            <div className="serif min-h-[60vh] text-[1.2rem] leading-[1.6] text-ink">
               {project.script.trim() ? (
                 <LinkifiedText text={project.script} />
               ) : (
-                <p className="text-ink-muted italic">Nothing written yet.</p>
+                <p className="serif-italic text-muted">nothing written yet.</p>
               )}
             </div>
           )}
         </div>
       </div>
     </div>
+  )
+}
+
+function MetaField({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: React.ElementType
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <label className="mono inline-flex items-center gap-2 text-[0.6rem] uppercase tracking-[0.26em] text-muted">
+      <Icon size={12} />
+      <span>{label}</span>
+      {children}
+    </label>
   )
 }

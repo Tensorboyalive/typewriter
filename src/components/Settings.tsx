@@ -4,11 +4,13 @@ import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
 import { CHECKLIST_CATEGORIES, type ChecklistCategory } from '../types'
 import type { UserRole } from '../types'
+import { Eyebrow } from './editorial/Eyebrow'
+import { cn } from '../lib/cn'
 
 const ROLES: { id: UserRole; label: string; description: string }[] = [
-  { id: 'admin', label: 'Admin', description: 'Full access — manages team, channels, finances' },
-  { id: 'pa', label: 'PA', description: 'Pipeline, content bank, checklist, saved notes' },
-  { id: 'editor', label: 'Editor', description: 'Pipeline access only — assigned tasks' },
+  { id: 'admin', label: 'Admin', description: 'Full access. Manages team, channels, finances.' },
+  { id: 'pa', label: 'PA', description: 'Pipeline, content bank, checklist, saved notes.' },
+  { id: 'editor', label: 'Editor', description: 'Pipeline access only. Assigned tasks.' },
 ]
 
 interface TeamMemberRow {
@@ -48,7 +50,6 @@ export function Settings() {
     setProfileName(profile?.display_name ?? '')
   }, [profile])
 
-  // Fetch team members
   useEffect(() => {
     if (!activeChannel) return
     ;(async () => {
@@ -66,11 +67,7 @@ export function Settings() {
               .select('display_name, avatar_url')
               .eq('id', tm.user_id)
               .single()
-            return {
-              ...tm,
-              profile: prof,
-              email: null,
-            } as TeamMemberRow
+            return { ...tm, profile: prof, email: null } as TeamMemberRow
           })
         )
         setTeamMembers(rows)
@@ -108,7 +105,6 @@ export function Settings() {
     } else {
       setInviteSuccess(true)
       setInviteEmail('')
-      // Refresh the local team list
       const { data } = await supabase
         .from('team_members')
         .select('id, user_id, channel_id, role')
@@ -149,141 +145,146 @@ export function Settings() {
 
   const currentRole = ROLES.find(r => r.id === userRole)
 
+  const roleBadge = (role: UserRole) => {
+    const color =
+      role === 'admin' ? 'text-viral bg-viral/15' :
+      role === 'pa' ? 'text-warning bg-warning/15' :
+      'text-success bg-success/15'
+    return `mono inline-flex items-center px-2 py-0.5 text-[0.56rem] uppercase tracking-[0.24em] ${color}`
+  }
+
   return (
-    <div className="p-8 max-w-3xl">
-      <div className="mb-8">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">Settings</p>
-        <h2 className="text-2xl font-light text-ink">Account & Team</h2>
+    <div className="mx-auto w-full max-w-[900px] px-6 py-10 md:px-10 md:py-16 space-y-14">
+      {/* Header */}
+      <div>
+        <Eyebrow>settings · account & team</Eyebrow>
+        <h1
+          className="serif mt-6 leading-[0.95] tracking-[-0.02em] text-ink"
+          style={{ fontSize: 'clamp(2.25rem, calc(1rem + 2.5vw), 3.25rem)' }}
+        >
+          the <span className="serif-italic">controls.</span>
+        </h1>
       </div>
 
       {/* Profile */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <UserCog size={16} className="text-ink-muted" />
-          <h3 className="text-sm font-medium text-ink uppercase tracking-[0.1em]">Your Profile</h3>
+      <section>
+        <div className="mb-5 flex items-center gap-3">
+          <UserCog size={14} className="text-muted" />
+          <Eyebrow rule={false}>your profile</Eyebrow>
         </div>
-        <div className="bg-surface border border-line rounded-lg p-4 space-y-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Display name</p>
+        <div className="rule-top rule-bottom border-ink/10 bg-paper/60 px-6 py-6 space-y-5">
+          <FieldRow label="display name">
             <input
               value={profileName}
               onChange={e => setProfileName(e.target.value)}
-              placeholder="Your name..."
-              className="input w-full"
+              placeholder="your name…"
+              className="input-underline"
             />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Email</p>
-            <p className="text-sm text-ink-secondary">{user?.email ?? '—'}</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Your role</p>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-ink capitalize">{currentRole?.label}</span>
-              <span className="text-[11px] text-ink-muted">— {currentRole?.description}</span>
+          </FieldRow>
+          <FieldRow label="email">
+            <p className="text-[0.95rem] text-ink">{user?.email ?? '·'}</p>
+          </FieldRow>
+          <FieldRow label="your role">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={roleBadge(userRole)}>{currentRole?.label}</span>
+              <span className="text-[0.82rem] text-muted">{currentRole?.description}</span>
             </div>
-          </div>
+          </FieldRow>
           <button
             onClick={handleSaveProfile}
-            className="flex items-center gap-2 px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors"
+            className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
           >
-            <Save size={14} />
-            {savedProfile ? 'Saved!' : 'Save profile'}
+            <Save size={12} /> {savedProfile ? 'saved.' : 'save profile'}
           </button>
         </div>
       </section>
 
-      {/* Channel settings (admin only for editing) */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Hash size={16} className="text-ink-muted" />
-          <h3 className="text-sm font-medium text-ink uppercase tracking-[0.1em]">Channel Settings</h3>
+      {/* Channel settings */}
+      <section>
+        <div className="mb-5 flex items-center gap-3">
+          <Hash size={14} className="text-muted" />
+          <Eyebrow rule={false}>channel settings</Eyebrow>
         </div>
-        <div className="bg-surface border border-line rounded-lg p-4 space-y-3">
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Channel name</p>
+        <div className="rule-top rule-bottom border-ink/10 bg-paper/60 px-6 py-6 space-y-5">
+          <FieldRow label="channel name">
             <input
               value={channelName}
               onChange={e => setChannelName(e.target.value)}
               disabled={!isAdmin}
-              className="input w-full disabled:opacity-50"
+              className="input-underline disabled:opacity-50"
             />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Handle</p>
+          </FieldRow>
+          <FieldRow label="handle">
             <input
               value={channelHandle}
               onChange={e => setChannelHandle(e.target.value)}
               disabled={!isAdmin}
               placeholder="@handle"
-              className="input w-full disabled:opacity-50"
+              className="input-underline disabled:opacity-50"
             />
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-1">Niche</p>
+          </FieldRow>
+          <FieldRow label="niche">
             <input
               value={channelNiche}
               onChange={e => setChannelNiche(e.target.value)}
               disabled={!isAdmin}
-              placeholder="e.g. Tech, Finance, Lifestyle"
-              className="input w-full disabled:opacity-50"
+              placeholder="e.g. tech, finance, lifestyle"
+              className="input-underline disabled:opacity-50"
             />
-          </div>
-          {isAdmin && (
+          </FieldRow>
+          {isAdmin ? (
             <button
               onClick={handleSaveChannel}
-              className="flex items-center gap-2 px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors"
+              className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
             >
-              <Save size={14} />
-              {savedChannel ? 'Saved!' : 'Save channel'}
+              <Save size={12} /> {savedChannel ? 'saved.' : 'save channel'}
             </button>
-          )}
-          {!isAdmin && (
-            <p className="text-[10px] text-ink-muted">Only admins can edit channel settings.</p>
+          ) : (
+            <p className="mono text-[0.6rem] uppercase tracking-[0.24em] text-muted">
+              only admins can edit channel settings.
+            </p>
           )}
         </div>
       </section>
 
-      {/* Team Members */}
-      <section className="mb-8">
-        <div className="flex items-center gap-2 mb-4">
-          <Users size={16} className="text-ink-muted" />
-          <h3 className="text-sm font-medium text-ink uppercase tracking-[0.1em]">Team Members</h3>
+      {/* Team members */}
+      <section>
+        <div className="mb-5 flex items-center gap-3">
+          <Users size={14} className="text-muted" />
+          <Eyebrow rule={false}>team members</Eyebrow>
         </div>
 
         {/* Role legend */}
-        <div className="bg-canvas border border-line rounded-lg p-3 mb-4">
-          <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-2">Role permissions</p>
-          <div className="space-y-1.5">
+        <div className="mb-5 rule-top rule-bottom border-ink/10 px-5 py-4">
+          <Eyebrow rule={false}>role permissions</Eyebrow>
+          <div className="mt-3 space-y-2">
             {ROLES.map(r => (
-              <div key={r.id} className="flex items-center gap-2">
-                <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                  r.id === 'admin' ? 'bg-blueprint/15 text-blueprint' :
-                  r.id === 'pa' ? 'bg-warning/15 text-warning' :
-                  'bg-success/15 text-success'
-                }`}>
-                  {r.label}
-                </span>
-                <span className="text-[11px] text-ink-muted">{r.description}</span>
+              <div key={r.id} className="flex flex-wrap items-center gap-3">
+                <span className={roleBadge(r.id)}>{r.label}</span>
+                <span className="text-[0.8rem] text-muted">{r.description}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-surface border border-line rounded-lg p-4">
+        <div className="rule-top rule-bottom border-ink/10 bg-paper/60 px-6 py-6">
           {teamLoading ? (
-            <p className="text-sm text-ink-muted py-4 text-center">Loading team...</p>
+            <p className="mono py-4 text-center text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+              loading team…
+            </p>
           ) : teamMembers.length === 0 ? (
-            <p className="text-sm text-ink-muted py-4 text-center">No team members yet. You're the only one here.</p>
+            <p className="mono py-4 text-center text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+              no team members yet. you&apos;re the only one here.
+            </p>
           ) : (
-            <div className="space-y-2 mb-4">
+            <ul className="mb-5 divide-y divide-ink/10 rule-top rule-bottom">
               {teamMembers.map(member => (
-                <div key={member.id} className="flex items-center gap-3 px-3 py-2.5 bg-canvas border border-line rounded-md">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink font-medium">
-                      {member.profile?.display_name || 'Unnamed'}
+                <li key={member.id} className="flex items-center gap-4 py-3 -mx-2 px-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="serif text-[1rem] leading-tight text-ink">
+                      {member.profile?.display_name || 'unnamed'}
                       {member.user_id === user?.id && (
-                        <span className="text-[10px] text-ink-muted ml-2">(you)</span>
+                        <span className="mono ml-2 text-[0.58rem] uppercase tracking-[0.26em] text-muted">(you)</span>
                       )}
                     </p>
                   </div>
@@ -292,7 +293,7 @@ export function Settings() {
                       <select
                         value={member.role}
                         onChange={e => handleChangeRole(member.id, e.target.value as UserRole)}
-                        className="text-[11px] bg-transparent border border-line rounded px-2 py-1 text-ink"
+                        className="mono border-b border-ink/20 bg-transparent py-1 text-[0.7rem] uppercase tracking-[0.22em] text-ink outline-none focus:border-viral"
                       >
                         {ROLES.map(r => (
                           <option key={r.id} value={r.id}>{r.label}</option>
@@ -301,79 +302,78 @@ export function Settings() {
                       <button
                         onClick={() => handleRemoveMember(member.id)}
                         disabled={deletingMemberId === member.id}
-                        className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light transition-colors disabled:opacity-100"
+                        aria-label="remove member"
+                        className="p-1 text-muted hover:text-danger disabled:opacity-100"
                       >
-                        {deletingMemberId === member.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                        {deletingMemberId === member.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                       </button>
                     </div>
                   ) : (
-                    <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${
-                      member.role === 'admin' ? 'bg-blueprint/15 text-blueprint' :
-                      member.role === 'pa' ? 'bg-warning/15 text-warning' :
-                      'bg-success/15 text-success'
-                    }`}>
-                      {member.role}
-                    </span>
+                    <span className={roleBadge(member.role)}>{member.role}</span>
                   )}
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           )}
 
           {isAdmin && (
-            <div className="pt-3 border-t border-line">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-ink-muted mb-2">Invite member</p>
-              <div className="flex gap-2">
+            <div className="rule-top pt-5">
+              <Eyebrow rule={false}>invite member</Eyebrow>
+              <div className="mt-4 flex flex-wrap items-end gap-3">
                 <input
                   value={inviteEmail}
                   onChange={e => setInviteEmail(e.target.value)}
-                  placeholder="Email address..."
-                  className="input flex-1"
+                  placeholder="email address…"
+                  className="input-underline min-w-[220px] flex-1"
                 />
                 <div className="flex gap-1">
-                  {ROLES.filter(r => r.id !== 'admin').map(r => (
-                    <button
-                      key={r.id}
-                      onClick={() => setInviteRole(r.id)}
-                      className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${
-                        inviteRole === r.id
-                          ? 'border-blueprint bg-blueprint/10 text-blueprint'
-                          : 'border-line text-ink-secondary'
-                      }`}
-                    >
-                      {r.label}
-                    </button>
-                  ))}
+                  {ROLES.filter(r => r.id !== 'admin').map(r => {
+                    const active = inviteRole === r.id
+                    return (
+                      <button
+                        key={r.id}
+                        onClick={() => setInviteRole(r.id)}
+                        className={cn(
+                          'mono px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                          active ? 'bg-viral text-ink' : 'text-muted hover:text-ink',
+                        )}
+                      >
+                        {r.label.toLowerCase()}
+                      </button>
+                    )
+                  })}
                 </div>
                 <button
                   onClick={handleInvite}
                   disabled={!inviteEmail.trim() || inviting}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blueprint text-white rounded-md text-sm disabled:opacity-50"
+                  className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink disabled:opacity-50 disabled:pointer-events-none"
                 >
-                  <Plus size={14} /> {inviting ? 'Inviting...' : 'Invite'}
+                  <Plus size={12} /> {inviting ? 'inviting…' : 'invite'}
                 </button>
               </div>
               {channels.length > 1 && (
-                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                <label className="mt-4 flex cursor-pointer items-center gap-2">
                   <input
                     type="checkbox"
                     checked={inviteAllChannels}
                     onChange={e => setInviteAllChannels(e.target.checked)}
-                    className="rounded border-line text-blueprint"
+                    className="h-3.5 w-3.5 accent-viral"
                   />
-                  <span className="text-[11px] text-ink-secondary">
-                    Add to all channels ({channels.filter(c => c.user_id === user?.id).length})
+                  <span className="mono text-[0.6rem] uppercase tracking-[0.26em] text-muted">
+                    add to all channels ({channels.filter(c => c.user_id === user?.id).length})
                   </span>
                 </label>
               )}
               {inviteError && (
-                <p className="text-[11px] text-danger mt-2">{inviteError}</p>
+                <p role="alert" className="mono mt-3 text-[0.7rem] text-danger">{inviteError}</p>
               )}
               {inviteSuccess && (
-                <p className="text-[11px] text-success mt-2">Team member added successfully!</p>
+                <p className="mono mt-3 text-[0.62rem] uppercase tracking-[0.24em] text-success">
+                  team member added successfully.
+                </p>
               )}
-              <p className="text-[10px] text-ink-muted mt-2">
-                The invited user must already have a Typewriter account.
+              <p className="mono mt-3 text-[0.58rem] uppercase tracking-[0.26em] text-muted/80">
+                the invited user must already have a typewriter account.
               </p>
             </div>
           )}
@@ -390,36 +390,48 @@ export function Settings() {
         />
       )}
 
-      {/* Active channels overview */}
+      {/* Channels overview */}
       <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Hash size={16} className="text-ink-muted" />
-          <h3 className="text-sm font-medium text-ink uppercase tracking-[0.1em]">Your Channels</h3>
+        <div className="mb-5 flex items-center gap-3">
+          <Hash size={14} className="text-muted" />
+          <Eyebrow rule={false}>your channels</Eyebrow>
         </div>
-        <div className="space-y-1.5">
-          {channels.map(ch => (
-            <div
-              key={ch.id}
-              className={`flex items-center gap-3 bg-surface border rounded-md px-4 py-2.5 ${
-                ch.id === activeChannel?.id ? 'border-blueprint/40' : 'border-line'
-              }`}
-            >
-              <p className="text-sm text-ink font-medium flex-1">{ch.name}</p>
-              {ch.handle && <span className="text-[11px] text-ink-muted">@{ch.handle}</span>}
-              {ch.id === activeChannel?.id && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blueprint/15 text-blueprint font-medium uppercase tracking-wider">
-                  Active
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        <ul className="divide-y divide-ink/10 rule-top rule-bottom">
+          {channels.map(ch => {
+            const active = ch.id === activeChannel?.id
+            return (
+              <li key={ch.id} className={cn(
+                'flex items-center gap-4 py-3 -mx-2 px-2',
+                active && 'bg-paper/60',
+              )}>
+                <p className="serif flex-1 truncate text-[1.02rem] text-ink">{ch.name}</p>
+                {ch.handle && (
+                  <span className="mono text-[0.6rem] uppercase tracking-[0.24em] text-muted">@{ch.handle}</span>
+                )}
+                {active && (
+                  <span className="mono bg-viral px-2 py-0.5 text-[0.56rem] uppercase tracking-[0.26em] text-ink">
+                    active
+                  </span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
       </section>
     </div>
   )
 }
 
-// ─── Template Manager Sub-Component ──────────────────────
+function FieldRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mono text-[0.58rem] uppercase tracking-[0.28em] text-muted">{label}</p>
+      <div className="mt-2">{children}</div>
+    </div>
+  )
+}
+
+// ─── Template Manager ─────────────────────────────────────────
 function TemplateManager({
   templates,
   onAdd,
@@ -442,90 +454,116 @@ function TemplateManager({
     setAdding(false)
   }
 
-  const handleDelete = async (id: string) => {
-    await onDelete(id)
-  }
-
   const toggleActive = async (id: string, current: boolean) => {
     await onUpdate(id, { is_active: !current })
   }
 
   return (
-    <section className="mb-8">
-      <div className="flex items-center gap-2 mb-4">
-        <ListChecks size={16} className="text-ink-muted" />
-        <h3 className="text-sm font-medium text-ink uppercase tracking-[0.1em]">Daily Checklist Template</h3>
+    <section>
+      <div className="mb-5 flex items-center gap-3">
+        <ListChecks size={14} className="text-muted" />
+        <Eyebrow rule={false}>daily checklist template</Eyebrow>
       </div>
-      <p className="text-[11px] text-ink-muted mb-3">
-        These items are added to your checklist when you tap "Apply Template". Toggle items on/off without deleting.
+      <p className="mono mb-4 text-[0.6rem] uppercase tracking-[0.26em] text-muted">
+        items added when you tap apply template. toggle on/off without deleting.
       </p>
-      <div className="bg-surface border border-line rounded-lg p-4">
+      <div className="rule-top rule-bottom border-ink/10 bg-paper/60 px-6 py-6">
         {templates.length === 0 && !adding && (
-          <p className="text-sm text-ink-muted text-center py-4">No template items yet.</p>
+          <p className="mono py-4 text-center text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+            no template items yet.
+          </p>
         )}
-        <div className="space-y-1.5 mb-3">
+        <ul className="divide-y divide-ink/10 rule-top rule-bottom">
           {templates.map(tmpl => {
             const cat = CHECKLIST_CATEGORIES.find(c => c.id === tmpl.category)
             return (
-              <div key={tmpl.id} className="flex items-center gap-3 px-3 py-2 bg-canvas border border-line rounded-md group">
+              <li key={tmpl.id} className="group flex items-center gap-4 py-3 -mx-2 px-2">
                 <button
                   onClick={() => toggleActive(tmpl.id, tmpl.is_active)}
-                  className={`w-4 h-4 rounded border-2 transition-colors ${tmpl.is_active ? 'bg-success border-success' : 'border-line'}`}
+                  aria-pressed={tmpl.is_active}
+                  className={cn(
+                    'h-3.5 w-3.5 rounded-sm border-2 transition-colors',
+                    tmpl.is_active ? 'bg-success border-success' : 'border-ink/30',
+                  )}
                 />
-                <span className={`flex-1 text-sm ${tmpl.is_active ? 'text-ink' : 'text-ink-muted line-through'}`}>
+                <span className={cn(
+                  'serif flex-1 text-[0.98rem] leading-tight',
+                  tmpl.is_active ? 'text-ink' : 'text-muted line-through',
+                )}>
                   {tmpl.title}
                 </span>
                 {cat && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: cat.color + '18', color: cat.color }}>
-                    {cat.label}
+                  <span
+                    className="mono inline-flex items-center gap-1.5 px-2 py-0.5 text-[0.56rem] uppercase tracking-[0.24em]"
+                    style={{ color: cat.color }}
+                  >
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ background: cat.color }} />
+                    {cat.label.toLowerCase()}
                   </span>
                 )}
                 <button
-                  onClick={() => handleDelete(tmpl.id)}
-                  className="p-1 rounded text-ink-muted hover:text-danger hover:bg-danger-light opacity-0 group-hover:opacity-100 transition-all"
+                  onClick={() => onDelete(tmpl.id)}
+                  aria-label="delete template item"
+                  className="p-1 text-muted opacity-0 hover:text-danger group-hover:opacity-100"
                 >
-                  <Trash2 size={14} />
+                  <Trash2 size={13} />
                 </button>
-              </div>
+              </li>
             )
           })}
-        </div>
+        </ul>
 
         {adding ? (
-          <div className="border-t border-line pt-3">
-            <div className="flex gap-2 mb-2 flex-wrap">
-              {CHECKLIST_CATEGORIES.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => setCategory(c.id)}
-                  className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
-                    category === c.id ? 'border-transparent text-white' : 'border-line text-ink-secondary'
-                  }`}
-                  style={category === c.id ? { backgroundColor: c.color } : {}}
-                >
-                  {c.label}
-                </button>
-              ))}
+          <div className="mt-5 rule-top pt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="mono mr-2 text-[0.58rem] uppercase tracking-[0.28em] text-muted">category ·</span>
+              {CHECKLIST_CATEGORIES.map(c => {
+                const active = category === c.id
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setCategory(c.id)}
+                    className={cn(
+                      'mono inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                      active ? 'text-ink' : 'text-muted hover:text-ink',
+                    )}
+                    style={active ? { boxShadow: `inset 0 -2px 0 ${c.color}` } : undefined}
+                  >
+                    <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ background: c.color }} />
+                    {c.label.toLowerCase()}
+                  </button>
+                )
+              })}
             </div>
-            <div className="flex gap-2">
+            <div className="mt-4 flex items-end gap-3">
               <input
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                placeholder="Template item title..."
+                placeholder="template item title…"
                 autoFocus
-                className="input flex-1"
+                className="input-underline flex-1"
                 onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }}
               />
-              <button onClick={handleAdd} className="px-3 py-1.5 bg-blueprint text-white rounded-md text-sm">Add</button>
-              <button onClick={() => setAdding(false)} className="px-3 py-1.5 text-sm text-ink-muted hover:text-ink">Cancel</button>
+              <button
+                onClick={handleAdd}
+                className="mono inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+              >
+                add
+              </button>
+              <button
+                onClick={() => setAdding(false)}
+                className="mono text-[0.68rem] uppercase tracking-[0.24em] text-muted hover:text-ink"
+              >
+                cancel
+              </button>
             </div>
           </div>
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-2 text-sm text-ink-muted hover:text-blueprint transition-colors"
+            className="mono mt-5 inline-flex items-center gap-2 text-[0.66rem] uppercase tracking-[0.24em] text-muted hover:text-viral"
           >
-            <Plus size={14} /> Add template item
+            <Plus size={12} /> add template item
           </button>
         )}
       </div>

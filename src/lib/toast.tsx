@@ -16,6 +16,22 @@ const ToastContext = createContext<ToastContextType | null>(null)
 
 let nextId = 1
 
+/**
+ * Editorial toast — ink card + mono label eyebrow + viral accent stripe.
+ * Per design.md §7.7 and §9: error tone is lowercase and specific, never "An error occurred".
+ */
+const VARIANT_LABEL: Record<ToastVariant, string> = {
+  error: 'couldn\'t save',
+  warning: 'heads up',
+  success: 'saved',
+}
+
+const VARIANT_STRIPE: Record<ToastVariant, string> = {
+  error: 'bg-danger',
+  warning: 'bg-warning',
+  success: 'bg-success',
+}
+
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([])
 
@@ -29,27 +45,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const dismiss = (id: number) => setToasts(prev => prev.filter(t => t.id !== id))
 
-  const bgMap: Record<ToastVariant, string> = {
-    error: '#dc2626',
-    warning: '#d97706',
-    success: '#16a34a',
-  }
-
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
       {toasts.length > 0 && (
         <div
-          style={{
-            position: 'fixed',
-            bottom: '1.25rem',
-            right: '1.25rem',
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.5rem',
-            maxWidth: '22rem',
-          }}
+          className="fixed bottom-5 right-5 z-[9999] flex max-w-sm flex-col gap-2"
           aria-live="assertive"
           aria-atomic="false"
         >
@@ -57,35 +58,24 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <div
               key={t.id}
               role="alert"
-              className="toast-in"
-              style={{
-                background: bgMap[t.variant],
-                color: '#fff',
-                padding: '0.75rem 1rem',
-                borderRadius: '0.5rem',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '0.75rem',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-                fontSize: '0.875rem',
-                lineHeight: 1.4,
-              }}
+              className="toast-in flex items-stretch gap-0 overflow-hidden rounded-sm border border-ink/15 bg-paper shadow-[0_8px_24px_-12px_rgba(10,10,10,0.35)]"
             >
-              <span style={{ flex: 1 }}>{t.message}</span>
+              <span
+                aria-hidden="true"
+                className={`w-[3px] flex-shrink-0 ${VARIANT_STRIPE[t.variant]}`}
+              />
+              <div className="flex flex-1 flex-col gap-1.5 px-4 py-3">
+                <span className="mono text-[0.62rem] uppercase tracking-[0.28em] text-muted">
+                  {VARIANT_LABEL[t.variant]}
+                </span>
+                <span className="text-[0.9rem] leading-snug text-ink">
+                  {t.message}
+                </span>
+              </div>
               <button
                 onClick={() => dismiss(t.id)}
-                aria-label="Dismiss"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontSize: '1rem',
-                  lineHeight: 1,
-                  padding: 0,
-                  opacity: 0.8,
-                  flexShrink: 0,
-                }}
+                aria-label="dismiss"
+                className="mono self-start px-3 py-3 text-[0.85rem] leading-none text-muted hover:text-ink"
               >
                 ×
               </button>

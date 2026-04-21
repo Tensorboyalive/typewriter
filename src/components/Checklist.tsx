@@ -4,6 +4,8 @@ import { Plus, ChevronLeft, ChevronRight, Circle, CheckCircle2, MinusCircle, Ale
 import { useStore } from '../store'
 import { CHECKLIST_CATEGORIES, type ChecklistCategory, type ChecklistStatus } from '../types'
 import { supabase } from '../lib/supabase'
+import { Eyebrow } from './editorial/Eyebrow'
+import { cn } from '../lib/cn'
 
 const STATUS_ICONS: Record<ChecklistStatus, typeof Circle> = {
   pending: Circle,
@@ -13,7 +15,7 @@ const STATUS_ICONS: Record<ChecklistStatus, typeof Circle> = {
 }
 
 const STATUS_COLORS: Record<ChecklistStatus, string> = {
-  pending: 'text-ink-muted',
+  pending: 'text-muted',
   done: 'text-success',
   skipped: 'text-warning',
   blocked: 'text-danger',
@@ -33,7 +35,6 @@ export function Checklist() {
   const dateStr = format(date, 'yyyy-MM-dd')
   const isToday = format(new Date(), 'yyyy-MM-dd') === dateStr
 
-  // Fetch items for selected date
   const fetchForDate = async (d: Date) => {
     setDate(d)
     setLoading(true)
@@ -47,7 +48,6 @@ export function Checklist() {
     setLoading(false)
   }
 
-  // Use store items for today, fetch for other dates
   const displayItems = isToday ? checklistItems : items
 
   const doneCount = displayItems.filter(i => i.status === 'done').length
@@ -95,21 +95,19 @@ export function Checklist() {
   const handleApplyTemplate = async () => {
     setAutoFilling(true)
     await applyDailyTemplate(dateStr)
-    // Also add project-based items
     const todayProjects = projects.filter(p =>
       p.scheduled_date && format(new Date(p.scheduled_date), 'yyyy-MM-dd') === dateStr
     )
     const existingTitles = new Set(displayItems.map(i => i.title))
     for (const proj of todayProjects) {
-      const title = proj.format ? `${proj.title} — ${proj.format}` : proj.title
-      if (existingTitles.has(title)) continue
-      await addChecklistItem({ title, category: 'content', date: dateStr })
+      const itemTitle = proj.format ? `${proj.title} · ${proj.format}` : proj.title
+      if (existingTitles.has(itemTitle)) continue
+      await addChecklistItem({ title: itemTitle, category: 'content', date: dateStr })
     }
     if (!isToday) await fetchForDate(date)
     setAutoFilling(false)
   }
 
-  // EOD Summary calculations
   const eodDone = displayItems.filter(i => i.status === 'done').length
   const eodPending = displayItems.filter(i => i.status === 'pending').length
   const eodSkipped = displayItems.filter(i => i.status === 'skipped').length
@@ -120,157 +118,256 @@ export function Checklist() {
     items: displayItems.filter(i => i.category === cat.id),
   })).filter(g => g.items.length > 0)
 
+  const ungrouped = displayItems.filter(i => !CHECKLIST_CATEGORIES.find(c => c.id === i.category))
+
   return (
-    <div className="p-8 max-w-3xl">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto w-full max-w-[900px] px-6 py-10 md:px-10 md:py-16">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">Daily Ops</p>
-          <h2 className="text-2xl font-light text-ink">Checklist</h2>
+          <Eyebrow>daily ops · checklist</Eyebrow>
+          <h1
+            className="serif mt-6 leading-[0.95] tracking-[-0.02em] text-ink"
+            style={{ fontSize: 'clamp(2.25rem, calc(1rem + 2.5vw), 3.5rem)' }}
+          >
+            one list, <span className="serif-italic">done by dusk.</span>
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleApplyTemplate}
             disabled={autoFilling}
-            className="flex items-center gap-2 px-3 py-2 border border-line text-ink-secondary rounded-md text-sm hover:bg-canvas transition-colors disabled:opacity-50"
-            title={`Apply ${checklistTemplates.filter(t => t.is_active).length} template items + scheduled projects`}
+            title={`apply ${checklistTemplates.filter(t => t.is_active).length} template items + scheduled projects`}
+            className="mono inline-flex items-center gap-2 border border-ink/15 px-4 py-2 text-[0.65rem] uppercase tracking-[0.24em] text-muted transition-colors hover:border-viral hover:text-viral disabled:opacity-50"
           >
-            <Wand2 size={14} /> {autoFilling ? 'Applying...' : 'Apply Template'}
+            <Wand2 size={13} /> {autoFilling ? 'applying…' : 'apply template'}
           </button>
-          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors">
-            <Plus size={16} /> Add Task
+          <button
+            onClick={() => setAdding(true)}
+            className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+          >
+            <Plus size={12} strokeWidth={2} /> add task
           </button>
         </div>
       </div>
 
       {/* Date nav + progress */}
-      <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => fetchForDate(subDays(date, 1))} className="p-1 rounded hover:bg-canvas text-ink-muted"><ChevronLeft size={18} /></button>
-        <div className="text-center">
-          <p className="text-sm font-medium text-ink">{isToday ? 'Today' : format(date, 'EEEE')}</p>
-          <p className="text-[10px] text-ink-muted">{format(date, 'MMMM d, yyyy')}</p>
+      <div className="mt-10 rule-top rule-bottom flex flex-wrap items-center gap-x-6 gap-y-4 border-ink/10 py-5">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => fetchForDate(subDays(date, 1))}
+            aria-label="previous day"
+            className="p-1 text-muted hover:text-viral"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <div>
+            <p className="serif text-[1.15rem] leading-tight text-ink">
+              {isToday ? 'today' : format(date, 'EEEE').toLowerCase()}
+            </p>
+            <p className="mono text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+              {format(date, 'MMMM d, yyyy').toLowerCase()}
+            </p>
+          </div>
+          <button
+            onClick={() => fetchForDate(addDays(date, 1))}
+            aria-label="next day"
+            className="p-1 text-muted hover:text-viral"
+          >
+            <ChevronRight size={16} />
+          </button>
         </div>
-        <button onClick={() => fetchForDate(addDays(date, 1))} className="p-1 rounded hover:bg-canvas text-ink-muted"><ChevronRight size={18} /></button>
         <div className="flex-1" />
         <div className="text-right">
-          <p className="text-2xl font-light text-ink tabular-nums">{pct}%</p>
-          <p className="text-[10px] text-ink-muted">{doneCount}/{totalCount} done</p>
+          <p className="serif text-[2.25rem] leading-none text-ink tnum">{pct}%</p>
+          <p className="mono mt-1 text-[0.58rem] uppercase tracking-[0.28em] text-muted tnum">
+            {doneCount}/{totalCount} done
+          </p>
         </div>
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-canvas rounded-full overflow-hidden mb-6">
-        <div className="h-full bg-success rounded-full transition-all" style={{ width: `${pct}%` }} />
+      <div className="mt-5 h-[3px] w-full bg-ink/10">
+        <div className="h-full bg-viral transition-all duration-700" style={{ width: `${pct}%` }} />
       </div>
 
+      {/* Add drawer */}
       {adding && (
-        <div className="mb-4 bg-surface border border-line rounded-lg p-4">
-          <div className="flex gap-2 mb-3 flex-wrap">
-            {CHECKLIST_CATEGORIES.map(c => (
-              <button key={c.id} onClick={() => setCategory(c.id)}
-                className={`text-[11px] px-2.5 py-1 rounded-full border transition-colors ${category === c.id ? 'border-transparent text-white' : 'border-line text-ink-secondary'}`}
-                style={category === c.id ? { backgroundColor: c.color } : {}}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Task..." autoFocus
-              className="input flex-1" onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }} />
-            <button onClick={handleAdd} className="px-4 py-2 bg-blueprint text-white rounded-md text-sm">Add</button>
-          </div>
-        </div>
-      )}
-
-      {loading && <p className="text-sm text-ink-muted py-4 text-center">Loading...</p>}
-
-      {!loading && displayItems.length === 0 && (
-        <p className="text-sm text-ink-muted py-8 text-center">No tasks for this day.</p>
-      )}
-
-      {/* Grouped items */}
-      {grouped.map(group => (
-        <div key={group.id} className="mb-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: group.color }} />
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{group.label}</p>
-            <span className="text-[10px] text-ink-muted">{group.items.filter(i => i.status === 'done').length}/{group.items.length}</span>
-          </div>
-          <div className="space-y-1">
-            {group.items.map(item => {
-              const Icon = STATUS_ICONS[item.status as ChecklistStatus]
-              const color = STATUS_COLORS[item.status as ChecklistStatus]
+        <div className="mt-8 rule-bottom border-ink/10 bg-paper/60 p-6">
+          <Eyebrow>new task</Eyebrow>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="mono mr-2 text-[0.58rem] uppercase tracking-[0.28em] text-muted">category ·</span>
+            {CHECKLIST_CATEGORIES.map(c => {
+              const active = category === c.id
               return (
-                <div key={item.id} className="card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group hover:shadow-sm transition-shadow">
-                  <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={`${color} hover:opacity-70 transition-opacity ${item.status === 'done' ? 'tick-pop' : ''}`}>
-                    <Icon size={18} />
-                  </button>
-                  <span className={`flex-1 text-sm ${item.status === 'done' ? 'line-through text-ink-muted' : 'text-ink'}`}>
-                    {item.title}
-                  </span>
-                  {item.skip_reason && <span className="text-[10px] text-warning">{item.skip_reason}</span>}
-                  <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger transition-all disabled:opacity-100">
-                    {deletingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
-                  </button>
-                </div>
+                <button
+                  key={c.id}
+                  onClick={() => setCategory(c.id)}
+                  className={cn(
+                    'mono inline-flex items-center gap-1.5 px-2.5 py-1 text-[0.6rem] uppercase tracking-[0.24em] transition-colors',
+                    active ? 'text-ink' : 'text-muted hover:text-ink',
+                  )}
+                  style={active ? { boxShadow: `inset 0 -2px 0 ${c.color}` } : undefined}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="h-1.5 w-1.5 rounded-full"
+                    style={{ background: c.color }}
+                  />
+                  {c.label.toLowerCase()}
+                </button>
               )
             })}
           </div>
-        </div>
-      ))}
-
-      {/* Ungrouped (if any items don't match categories) */}
-      {displayItems.filter(i => !CHECKLIST_CATEGORIES.find(c => c.id === i.category)).length > 0 && (
-        <div className="mb-4">
-          {displayItems.filter(i => !CHECKLIST_CATEGORIES.find(c => c.id === i.category)).map(item => {
-            const Icon = STATUS_ICONS[item.status as ChecklistStatus]
-            const color = STATUS_COLORS[item.status as ChecklistStatus]
-            return (
-              <div key={item.id} className="card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-3 py-2.5 group">
-                <button onClick={() => cycleStatus(item.id, item.status as ChecklistStatus)} className={`${color} ${item.status === 'done' ? 'tick-pop' : ''}`}>
-                  <Icon size={18} />
-                </button>
-                <span className={`flex-1 text-sm ${item.status === 'done' ? 'line-through text-ink-muted' : 'text-ink'}`}>{item.title}</span>
-                <button onClick={() => handleDelete(item.id)} disabled={deletingId === item.id} className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-danger-light text-ink-muted hover:text-danger disabled:opacity-100">
-                  {deletingId === item.id ? <Loader2 size={14} className="animate-spin" /> : <X size={14} />}
-                </button>
-              </div>
-            )
-          })}
+          <div className="mt-4 flex items-end gap-3">
+            <input
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              placeholder="task…"
+              autoFocus
+              className="input-underline flex-1"
+              onKeyDown={e => { if (e.key === 'Enter') handleAdd(); if (e.key === 'Escape') setAdding(false) }}
+            />
+            <button
+              onClick={handleAdd}
+              className="mono inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+            >
+              add
+            </button>
+          </div>
         </div>
       )}
 
+      {/* States */}
+      {loading && (
+        <p className="mono mt-10 py-4 text-center text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+          loading…
+        </p>
+      )}
+
+      {!loading && displayItems.length === 0 && (
+        <p className="mono mt-10 py-8 text-center text-[0.7rem] uppercase tracking-[0.24em] text-muted">
+          no tasks for this day.
+        </p>
+      )}
+
+      {/* Grouped items */}
+      <div className="mt-8 space-y-10">
+        {grouped.map(group => (
+          <section key={group.id}>
+            <div className="mb-3 flex items-center gap-3">
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: group.color }}
+              />
+              <Eyebrow rule={false}>{group.label.toLowerCase()}</Eyebrow>
+              <span className="mono text-[0.6rem] uppercase tracking-[0.26em] text-muted tnum">
+                {group.items.filter(i => i.status === 'done').length}/{group.items.length}
+              </span>
+            </div>
+            <ul className="divide-y divide-ink/10 rule-top rule-bottom">
+              {group.items.map(item => (
+                <ChecklistRow
+                  key={item.id}
+                  item={item}
+                  deleting={deletingId === item.id}
+                  onCycle={() => cycleStatus(item.id, item.status as ChecklistStatus)}
+                  onDelete={() => handleDelete(item.id)}
+                />
+              ))}
+            </ul>
+          </section>
+        ))}
+
+        {ungrouped.length > 0 && (
+          <section>
+            <Eyebrow rule={false}>uncategorized</Eyebrow>
+            <ul className="mt-3 divide-y divide-ink/10 rule-top rule-bottom">
+              {ungrouped.map(item => (
+                <ChecklistRow
+                  key={item.id}
+                  item={item}
+                  deleting={deletingId === item.id}
+                  onCycle={() => cycleStatus(item.id, item.status as ChecklistStatus)}
+                  onDelete={() => handleDelete(item.id)}
+                />
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+
       {/* EOD Summary */}
       {displayItems.length > 0 && (
-        <div className="mt-6 border-t border-line pt-4">
+        <div className="mt-12 rule-top pt-5">
           <button
             onClick={() => setRecapOpen(!recapOpen)}
-            className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-ink-muted hover:text-ink transition-colors"
+            className="mono inline-flex items-center gap-2 text-[0.62rem] uppercase tracking-[0.28em] text-muted hover:text-ink"
           >
-            {recapOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            Today's Recap
+            {recapOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+            today&apos;s recap
           </button>
           {recapOpen && (
-            <div className="mt-3 grid grid-cols-4 gap-3">
-              <div className="bg-success/10 border border-success/20 rounded-lg p-3 text-center">
-                <p className="text-2xl font-light text-success tabular-nums">{eodDone}</p>
-                <p className="text-[10px] text-success uppercase tracking-wider">Done</p>
-              </div>
-              <div className="bg-canvas border border-line rounded-lg p-3 text-center">
-                <p className="text-2xl font-light text-ink tabular-nums">{eodPending}</p>
-                <p className="text-[10px] text-ink-muted uppercase tracking-wider">Pending</p>
-              </div>
-              <div className="bg-warning/10 border border-warning/20 rounded-lg p-3 text-center">
-                <p className="text-2xl font-light text-warning tabular-nums">{eodSkipped}</p>
-                <p className="text-[10px] text-warning uppercase tracking-wider">Skipped</p>
-              </div>
-              <div className="bg-danger/10 border border-danger/20 rounded-lg p-3 text-center">
-                <p className="text-2xl font-light text-danger tabular-nums">{eodBlocked}</p>
-                <p className="text-[10px] text-danger uppercase tracking-wider">Blocked</p>
-              </div>
+            <div className="mt-5 grid grid-cols-4 gap-px rounded-sm border border-ink/10 bg-ink/10">
+              <RecapTile n={eodDone} label="done" color="text-success" />
+              <RecapTile n={eodPending} label="pending" color="text-ink" />
+              <RecapTile n={eodSkipped} label="skipped" color="text-warning" />
+              <RecapTile n={eodBlocked} label="blocked" color="text-danger" />
             </div>
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function ChecklistRow({ item, deleting, onCycle, onDelete }: {
+  item: { id: string; title: string; status: string; skip_reason?: string | null }
+  deleting: boolean
+  onCycle: () => void
+  onDelete: () => void
+}) {
+  const Icon = STATUS_ICONS[item.status as ChecklistStatus]
+  const color = STATUS_COLORS[item.status as ChecklistStatus]
+  const done = item.status === 'done'
+  return (
+    <li className="group flex items-center gap-4 py-3 -mx-2 px-2 transition-colors hover:bg-paper/60">
+      <button
+        onClick={onCycle}
+        className={cn(color, 'transition-opacity hover:opacity-70', done && 'tick-pop')}
+        aria-label="cycle status"
+      >
+        <Icon size={18} strokeWidth={1.6} />
+      </button>
+      <span className={cn(
+        'serif flex-1 text-[1rem] leading-tight',
+        done ? 'text-muted line-through' : 'text-ink',
+      )}>
+        {item.title}
+      </span>
+      {item.skip_reason && (
+        <span className="mono text-[0.6rem] uppercase tracking-[0.24em] text-warning">
+          {item.skip_reason}
+        </span>
+      )}
+      <button
+        onClick={onDelete}
+        disabled={deleting}
+        aria-label="delete task"
+        className="p-1 text-muted opacity-0 transition-all hover:text-danger group-hover:opacity-100 disabled:opacity-100"
+      >
+        {deleting ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+      </button>
+    </li>
+  )
+}
+
+function RecapTile({ n, label, color }: { n: number; label: string; color: string }) {
+  return (
+    <div className="bg-paper p-4 text-center">
+      <p className={cn('serif text-[1.75rem] leading-none tnum', color)}>{n}</p>
+      <p className="mono mt-2 text-[0.58rem] uppercase tracking-[0.28em] text-muted">{label}</p>
     </div>
   )
 }

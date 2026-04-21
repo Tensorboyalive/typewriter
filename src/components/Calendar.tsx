@@ -17,6 +17,8 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useStore } from '../store'
 import { CONTENT_FORMATS, type ContentFormat } from '../types'
 import { Select } from './Select'
+import { Eyebrow } from './editorial/Eyebrow'
+import { cn } from '../lib/cn'
 
 export function Calendar() {
   const navigate = useNavigate()
@@ -50,52 +52,57 @@ export function Calendar() {
   }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+    <div className="mx-auto w-full max-w-[1280px] px-6 py-10 md:px-10 md:py-16 md:pr-36">
+      {/* Header */}
+      <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">
-            Calendar
-          </p>
-          <h2 className="text-2xl font-light text-ink">
-            {format(current, 'MMMM yyyy')}
-          </h2>
+          <Eyebrow>the grid · schedule</Eyebrow>
+          <h1
+            className="serif mt-6 leading-[0.95] tracking-[-0.02em] text-ink"
+            style={{ fontSize: 'clamp(2.5rem, calc(1rem + 3vw), 4rem)' }}
+          >
+            {format(current, 'MMMM')}{' '}
+            <span className="serif-italic text-muted">{format(current, 'yyyy')}</span>
+          </h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrent(subMonths(current, 1))}
-            className="p-2 rounded-md hover:bg-surface border border-line text-ink-secondary"
+            aria-label="previous month"
+            className="border border-ink/15 p-2 text-muted transition-colors hover:text-viral hover:border-viral"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={15} />
           </button>
           <button
             onClick={() => setCurrent(new Date())}
-            className="px-3 py-2 rounded-md hover:bg-surface border border-line text-sm text-ink-secondary"
+            className="mono border border-ink/15 px-4 py-2 text-[0.65rem] uppercase tracking-[0.24em] text-muted transition-colors hover:text-viral hover:border-viral"
           >
-            Today
+            today
           </button>
           <button
             onClick={() => setCurrent(addMonths(current, 1))}
-            className="p-2 rounded-md hover:bg-surface border border-line text-ink-secondary"
+            aria-label="next month"
+            className="border border-ink/15 p-2 text-muted transition-colors hover:text-viral hover:border-viral"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={15} />
           </button>
         </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 mb-2">
+      {/* Day-of-week headers — editorial mono eyebrows */}
+      <div className="mt-10 grid grid-cols-7 rule-bottom pb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
           <div
             key={d}
-            className="text-[10px] uppercase tracking-[0.2em] text-ink-muted text-center py-2"
+            className="mono text-center text-[0.58rem] uppercase tracking-[0.3em] text-muted"
           >
-            {d}
+            {d.toLowerCase()}
           </div>
         ))}
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-7 border-t border-l border-line rounded-lg overflow-hidden">
+      {/* Month grid — hairline bordered tiles, 1px inner */}
+      <div className="mt-0 grid grid-cols-7 gap-px border-l border-t border-ink/10 bg-ink/10">
         {days.map(day => {
           const dayProjects = getProjectsForDay(day)
           const inMonth = isSameMonth(day, current)
@@ -107,13 +114,23 @@ export function Calendar() {
             <div
               key={day.toISOString()}
               onClick={() => setSelectedDate(day)}
-              className={`min-h-28 p-2 border-r border-b border-line cursor-pointer transition-colors
-                ${!inMonth ? 'bg-ink/[0.04] dark:bg-ink/[0.08] text-ink-muted' : weekend ? 'bg-ink/[0.04] dark:bg-ink/[0.08] hover:bg-blueprint-light/20' : 'bg-surface hover:bg-blueprint-light/20'}
-                ${selected ? 'ring-2 ring-blueprint ring-inset' : ''}`}
+              className={cn(
+                'min-h-28 cursor-pointer border-r border-b border-ink/10 p-2 transition-colors',
+                !inMonth && 'bg-paper/40 text-muted/60',
+                inMonth && weekend && 'bg-paper/80',
+                inMonth && !weekend && 'bg-paper',
+                'hover:bg-cream',
+                selected && 'bg-cream ring-2 ring-viral ring-inset',
+              )}
             >
               <span
-                className={`text-sm inline-flex items-center justify-center w-7 h-7 rounded-full
-                  ${today ? 'bg-blueprint text-white font-medium' : weekend && inMonth ? 'text-blueprint' : ''}`}
+                className={cn(
+                  'mono inline-flex h-6 w-6 items-center justify-center text-[0.72rem] tabular-nums',
+                  today && 'bg-viral text-ink font-medium rounded-full',
+                  !today && weekend && inMonth && 'text-viral',
+                  !today && !weekend && inMonth && 'text-ink',
+                  !today && !inMonth && 'text-muted/60',
+                )}
               >
                 {format(day, 'd')}
               </span>
@@ -125,10 +142,10 @@ export function Calendar() {
                       e.stopPropagation()
                       navigate(`/projects/${p.id}`)
                     }}
-                    className="block w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all bg-blueprint-light text-blueprint"
+                    className="mono block w-full truncate bg-viral/90 px-1.5 py-0.5 text-left text-[0.6rem] uppercase tracking-[0.18em] text-ink transition-colors hover:bg-ink hover:text-cream"
                     title={p.title}
                   >
-                    {p.title}
+                    {p.title || 'untitled'}
                   </button>
                 ))}
               </div>
@@ -137,27 +154,26 @@ export function Calendar() {
         })}
       </div>
 
-      {/* Quick-add form */}
+      {/* Quick-add form for selected date */}
       {selectedDate && (
-        <div className="mt-6 bg-surface border border-line rounded-lg p-4 max-w-lg animate-in">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">
-              Schedule for {format(selectedDate, 'EEEE, MMM d')}
-            </p>
+        <div className="mt-8 sheet-in max-w-2xl rule-top rule-bottom border-ink/10 bg-paper/60 p-6">
+          <div className="flex items-baseline justify-between">
+            <Eyebrow>schedule · {format(selectedDate, 'EEEE, MMM d').toLowerCase()}</Eyebrow>
             <button
               onClick={() => setSelectedDate(null)}
-              className="text-ink-muted hover:text-ink"
+              aria-label="close"
+              className="text-muted hover:text-ink"
             >
-              <X size={16} />
+              <X size={15} />
             </button>
           </div>
-          <div className="flex gap-2">
+          <div className="mt-5 flex flex-wrap items-end gap-4">
             <input
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
-              placeholder="Project title..."
+              placeholder="project title…"
               autoFocus
-              className="input flex-1"
+              className="input-underline flex-1 min-w-[200px]"
               onKeyDown={e => e.key === 'Enter' && handleAdd()}
             />
             <Select
@@ -167,32 +183,34 @@ export function Calendar() {
             />
             <button
               onClick={handleAdd}
-              className="px-4 py-2 bg-blueprint text-white rounded-md text-sm hover:bg-blueprint-dark transition-colors"
+              className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
             >
-              Add
+              add
             </button>
           </div>
 
-          {/* Show existing projects for selected day — click to open */}
+          {/* Existing projects for the selected day */}
           {getProjectsForDay(selectedDate).length > 0 && (
-            <div className="mt-3 pt-3 border-t border-line-light space-y-1">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">
-                On this day — click to open
+            <div className="mt-6 rule-top pt-5">
+              <p className="mono text-[0.6rem] uppercase tracking-[0.28em] text-muted">
+                on this day · click to open
               </p>
-              {getProjectsForDay(selectedDate).map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => navigate(`/projects/${p.id}`)}
-                  className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
-                >
-                  <span className="w-2 h-2 rounded-full shrink-0 bg-blueprint" />
-                  <span className="flex-1 truncate">{p.title}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{p.status}</span>
-                </button>
-              ))}
+              <ul className="mt-3 divide-y divide-ink/10 rule-top">
+                {getProjectsForDay(selectedDate).map(p => (
+                  <li key={p.id}>
+                    <button
+                      onClick={() => navigate(`/projects/${p.id}`)}
+                      className="flex w-full items-center gap-3 py-2.5 text-left hover:bg-cream -mx-2 px-2"
+                    >
+                      <span aria-hidden="true" className="h-1.5 w-1.5 shrink-0 rounded-full bg-viral" />
+                      <span className="serif flex-1 truncate text-[0.98rem] text-ink">{p.title || 'untitled'}</span>
+                      <span className="mono shrink-0 text-[0.58rem] uppercase tracking-[0.26em] text-muted">{p.status}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
-
         </div>
       )}
     </div>

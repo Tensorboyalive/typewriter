@@ -5,6 +5,7 @@ import { Pin, Plus, Trash2, Target, ChevronDown, ChevronLeft, ChevronRight, Arro
 import { useStore } from '../store'
 import { PersonaSwitcher } from './PersonaSwitcher'
 import type { TimeBlock, ChecklistItem, Project } from '../types'
+import { cn } from '../lib/cn'
 
 // ── Constants ────────────────────────────────────────────────────────
 // Full 24h day. 60px per hour → 1440px total. Each 15-min slot = 15px.
@@ -100,6 +101,7 @@ export function Today() {
 
   // Drop handler on the hour grid — compute new start_min from drop Y offset.
   // dataTransfer payload carries the block id and its duration (minutes).
+  // [contract preserved byte-identical]
   const handleGridDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const raw = e.dataTransfer.getData(DRAG_MIME)
@@ -115,36 +117,41 @@ export function Today() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header. pr reserves space for floating theme/music buttons top-right. */}
-      <div className="px-4 sm:px-6 py-4 pr-4 md:pr-44 border-b border-line bg-surface/50">
-        <div className="flex items-start justify-between gap-3 flex-wrap">
+    <div className="flex h-full flex-col bg-cream">
+      {/* Header with eyebrow + serif day/date */}
+      <div className="rule-bottom border-ink/10 bg-paper/70 px-6 py-5 pr-4 md:px-10 md:pr-44">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <p className="text-[10px] uppercase tracking-[0.25em] text-ink-muted">Today</p>
-            <div className="flex items-center gap-2 mt-0.5">
+            <p className="mono text-[0.62rem] uppercase tracking-[0.28em] text-muted">
+              the day · time-blocked
+            </p>
+            <div className="mt-2 flex items-center gap-2">
               <button
                 onClick={() => setDisplayDate(d => subDays(d, 1))}
-                aria-label="Previous day"
-                className="p-1 rounded hover:bg-canvas text-ink-muted hover:text-ink"
+                aria-label="previous day"
+                className="p-1 text-muted hover:text-viral"
               >
                 <ChevronLeft size={18} />
               </button>
-              <h1 className="text-xl sm:text-2xl font-light text-ink tabular-nums">
+              <h1
+                className="serif leading-[1] tracking-[-0.02em] text-ink tnum"
+                style={{ fontSize: 'clamp(1.5rem, calc(1rem + 1vw), 2.25rem)' }}
+              >
                 {format(displayDate, 'EEEE, MMMM d')}
               </h1>
               <button
                 onClick={() => setDisplayDate(d => addDays(d, 1))}
-                aria-label="Next day"
-                className="p-1 rounded hover:bg-canvas text-ink-muted hover:text-ink"
+                aria-label="next day"
+                className="p-1 text-muted hover:text-viral"
               >
                 <ChevronRight size={18} />
               </button>
               {!isToday && (
                 <button
                   onClick={() => setDisplayDate(new Date())}
-                  className="ml-1 px-2 py-1 text-[11px] uppercase tracking-wider text-blueprint border border-blueprint/40 rounded hover:bg-blueprint-light/50"
+                  className="mono ml-1 border-b border-viral/60 px-1 pb-0.5 text-[0.62rem] uppercase tracking-[0.24em] text-viral"
                 >
-                  Today
+                  today
                 </button>
               )}
             </div>
@@ -154,7 +161,9 @@ export function Today() {
           </div>
         </div>
 
-        <MITSlot mit={mit} onPick={() => setMitPicker(true)}
+        <MITSlot
+          mit={mit}
+          onPick={() => setMitPicker(true)}
           onClear={() => mit && deleteTimeBlock(mit.id)}
           onOpen={() => mit?.project_id && navigate(`/projects/${mit.project_id}`)}
           projects={allProjects}
@@ -163,9 +172,12 @@ export function Today() {
       </div>
 
       {/* Body: rail + tray */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Hourly rail — scrollable container keeps the header put */}
-        <div ref={railRef} className={`flex-1 overflow-auto relative md:pb-0 ${trayOpen ? 'pb-[55vh]' : 'pb-16'}`}>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Hourly rail */}
+        <div ref={railRef} className={cn(
+          'relative flex-1 overflow-auto',
+          trayOpen ? 'pb-[55vh] md:pb-0' : 'pb-16 md:pb-0',
+        )}>
           <div
             className="relative"
             style={{ height: (END_HOUR - START_HOUR) * HOUR_PX }}
@@ -182,11 +194,11 @@ export function Today() {
 
             {showNowLine && (
               <div
-                className="absolute left-0 right-0 pointer-events-none z-20"
+                className="pointer-events-none absolute inset-x-0 z-20"
                 style={{ top: nowOffsetPx }}
               >
                 <div className="h-px bg-danger" />
-                <div className="absolute -left-1 -top-1 w-2 h-2 rounded-full bg-danger" />
+                <div className="absolute -left-1 -top-1 h-2 w-2 rounded-full bg-danger" />
               </div>
             )}
 
@@ -290,25 +302,45 @@ function MITSlot({ mit, onPick, onClear, onOpen, projects, checklist }: {
     }
     prevDone.current = isDone
   }, [isDone])
+
+  const filled = Boolean(mit && title)
+
   return (
-    <div className={`mt-3 flex items-center gap-3 p-3 rounded-lg border border-blueprint/30 bg-blueprint-light/30 transition-transform duration-200 ${pulse ? 'scale-[1.03] bg-success/10' : ''}`}>
-      <Target size={16} className="text-blueprint shrink-0" />
-      {mit && title ? (
+    <div
+      className={cn(
+        'mt-4 flex items-center gap-3 rule-top rule-bottom border-ink/10 px-2 py-3 transition-transform duration-200',
+        filled ? 'bg-viral/15' : 'bg-transparent',
+        pulse && 'scale-[1.02] bg-success/15',
+      )}
+    >
+      <Target size={15} className={cn('shrink-0', filled ? 'text-viral' : 'text-muted')} />
+      {filled ? (
         <>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-blueprint">Most important today</p>
-            <button onClick={onOpen} className="text-sm font-medium text-ink truncate block w-full text-left hover:underline">
+          <div className="min-w-0 flex-1">
+            <p className="mono text-[0.6rem] uppercase tracking-[0.28em] text-viral">
+              most important today
+            </p>
+            <button
+              onClick={onOpen}
+              className="serif mt-1 block w-full truncate text-left text-[1.1rem] leading-tight text-ink hover:text-viral"
+            >
               {title}
             </button>
           </div>
-          <button onClick={onClear} title="Clear MIT"
-            className="p-1 text-ink-muted hover:text-danger">
-            <Trash2 size={14} />
+          <button
+            onClick={onClear}
+            aria-label="clear mit"
+            className="p-1 text-muted hover:text-danger"
+          >
+            <Trash2 size={13} />
           </button>
         </>
       ) : (
-        <button onClick={onPick} className="flex-1 text-left text-sm text-ink-muted hover:text-blueprint">
-          Pin your Most Important Task for today…
+        <button
+          onClick={onPick}
+          className="mono flex-1 text-left text-[0.72rem] uppercase tracking-[0.24em] text-muted hover:text-viral"
+        >
+          pin the one thing that makes today a win →
         </button>
       )}
     </div>
@@ -319,13 +351,13 @@ function HourRow({ hour, onAdd }: { hour: number; onAdd: () => void }) {
   return (
     <div
       onClick={onAdd}
-      className="absolute left-0 right-0 border-t border-line-light hover:bg-canvas/50 cursor-pointer group"
+      className="group absolute inset-x-0 cursor-pointer border-t border-ink/10 transition-colors hover:bg-paper/60"
       style={{ top: (hour - START_HOUR) * HOUR_PX, height: HOUR_PX }}
     >
-      <span className="absolute left-3 top-1 text-[10px] uppercase tracking-wider text-ink-muted">
+      <span className="mono absolute left-3 top-1 text-[0.58rem] uppercase tracking-[0.24em] text-muted tnum">
         {minToLabel(hour * 60)}
       </span>
-      <Plus size={14} className="absolute right-3 top-2 text-ink-muted opacity-0 group-hover:opacity-100" />
+      <Plus size={13} className="absolute right-3 top-2 text-muted opacity-0 group-hover:opacity-100" />
     </div>
   )
 }
@@ -342,19 +374,15 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
 }) {
   const [editing, setEditing] = useState(false)
   const [label, setLabel] = useState(block.label ?? '')
-  // Local preview height during drag-resize so the UI is immediate. Commit
-  // to the store on pointerup.
   const [liveEndMin, setLiveEndMin] = useState<number | null>(null)
 
   const top = (block.start_min - START_HOUR * 60) * (HOUR_PX / 60)
   const effectiveEnd = liveEndMin ?? block.end_min
   const height = Math.max(24, (effectiveEnd - block.start_min) * (HOUR_PX / 60) - 4)
   const proj = block.project_id ? projects.find(p => p.id === block.project_id) : null
-  const title = proj?.title ?? block.label ?? 'Untitled'
+  const title = proj?.title ?? block.label ?? 'untitled'
 
-  // Pointer-based bottom-edge resize. Document-level listeners so the drag
-  // continues even if the pointer leaves the card, and are cleaned up on
-  // pointerup to avoid leaks.
+  // Pointer-based bottom-edge resize — logic preserved byte-identical
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
     e.stopPropagation()
     e.preventDefault()
@@ -385,18 +413,22 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
         e.dataTransfer.effectAllowed = 'move'
         e.dataTransfer.setData(DRAG_MIME, `${block.id}|${block.end_min - block.start_min}`)
       }}
-      className={`card-hover sheet-in cursor-grab active:cursor-grabbing absolute left-16 right-2 rounded-md px-2.5 py-1.5 shadow-sm border overflow-hidden z-10 ${
+      className={cn(
+        'sheet-in absolute left-16 right-2 z-10 cursor-grab overflow-hidden px-3 py-1.5 active:cursor-grabbing',
         block.is_mit
-          ? 'bg-blueprint text-white border-blueprint-dark'
-          : 'bg-surface border-line hover:border-blueprint'
-      }`}
+          ? 'bg-viral text-ink'
+          : 'bg-paper border border-ink/10 hover:border-viral',
+      )}
       style={{ top: top + 2, height }}
     >
-      <div className="flex items-start justify-between gap-2 h-full">
-        <div className="flex-1 min-w-0">
-          <p className={`text-[10px] uppercase tracking-wider ${block.is_mit ? 'text-white/70' : 'text-ink-muted'}`}>
-            {minToLabel(block.start_min)} – {minToLabel(effectiveEnd)}
-            {block.is_mit && ' · MIT'}
+      <div className="flex h-full items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className={cn(
+            'mono text-[0.58rem] uppercase tracking-[0.24em] tnum',
+            block.is_mit ? 'text-ink/80' : 'text-muted',
+          )}>
+            {minToLabel(block.start_min)} · {minToLabel(effectiveEnd)}
+            {block.is_mit && ' · mit'}
           </p>
           {editing ? (
             <input
@@ -405,12 +437,15 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
               onChange={e => setLabel(e.target.value)}
               onBlur={() => { onRelabel(label); setEditing(false) }}
               onKeyDown={e => { if (e.key === 'Enter') { onRelabel(label); setEditing(false) } }}
-              className="text-sm bg-transparent outline-none border-b border-current w-full"
+              className="serif mt-0.5 w-full border-b border-current bg-transparent text-[0.95rem] outline-none"
             />
           ) : (
             <button
               onClick={() => (proj ? onOpen() : setEditing(true))}
-              className="text-sm font-medium text-left block w-full truncate hover:underline"
+              className={cn(
+                'serif mt-0.5 block w-full truncate text-left text-[0.95rem] leading-tight',
+                block.is_mit ? 'text-ink' : 'text-ink hover:text-viral',
+              )}
             >
               {title}
             </button>
@@ -418,16 +453,24 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
           {isPast && (
             <button
               onClick={onMoveToTomorrow}
-              className={`mt-0.5 text-[10px] inline-flex items-center gap-0.5 hover:underline ${
-                block.is_mit ? 'text-white/80' : 'text-ink-muted hover:text-blueprint'
-              }`}
-              title="Move to tomorrow"
+              className={cn(
+                'mono mt-0.5 inline-flex items-center gap-0.5 text-[0.55rem] uppercase tracking-[0.24em]',
+                block.is_mit ? 'text-ink/80' : 'text-muted hover:text-viral',
+              )}
+              title="move to tomorrow"
             >
-              <ArrowRight size={10} /> Tomorrow
+              <ArrowRight size={10} /> tomorrow
             </button>
           )}
         </div>
-        <button onClick={onDelete} className={`p-0.5 opacity-60 hover:opacity-100 ${block.is_mit ? 'text-white' : 'text-ink-muted hover:text-danger'}`}>
+        <button
+          onClick={onDelete}
+          className={cn(
+            'p-0.5 opacity-60 hover:opacity-100',
+            block.is_mit ? 'text-ink' : 'text-muted hover:text-danger',
+          )}
+          aria-label="delete block"
+        >
           <Trash2 size={12} />
         </button>
       </div>
@@ -436,7 +479,7 @@ function BlockCard({ block, projects, isPast, onDelete, onOpen, onRelabel, onRes
       <div
         onPointerDown={startResize}
         onDragStart={e => e.preventDefault()}
-        className="absolute left-0 right-0 bottom-0 h-1.5 cursor-ns-resize"
+        className="absolute inset-x-0 bottom-0 h-1.5 cursor-ns-resize"
         style={{ touchAction: 'none' }}
       />
     </div>
@@ -454,13 +497,21 @@ function TrayPanel({ checklist, projects, onAssign, open, onToggle }: {
 
   return (
     <>
-      <aside className="hidden md:flex w-64 border-l border-line flex-col overflow-hidden bg-surface/30">
-        <div className="px-3 py-3 border-b border-line-light">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">Unscheduled</p>
-          <p className="text-[11px] text-ink-muted mt-0.5">Tap to drop into now</p>
+      <aside className="hidden w-64 flex-col overflow-hidden border-l border-ink/10 bg-paper/40 md:flex">
+        <div className="rule-bottom px-4 py-4">
+          <p className="mono text-[0.62rem] uppercase tracking-[0.28em] text-muted">
+            unscheduled
+          </p>
+          <p className="mono mt-1 text-[0.58rem] uppercase tracking-[0.26em] text-muted/70">
+            tap to drop into now
+          </p>
         </div>
-        <div className="flex-1 overflow-auto p-2 space-y-1">
-          {empty && <p className="text-[12px] text-ink-muted px-2 py-4">All caught up.</p>}
+        <div className="flex-1 space-y-1 overflow-auto p-2">
+          {empty && (
+            <p className="mono px-2 py-4 text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+              all caught up.
+            </p>
+          )}
           {projects.map(p => (
             <TrayItem key={`p-${p.id}`} label={p.title} kind="project" onClick={() => onAssign('project', p)} />
           ))}
@@ -470,17 +521,22 @@ function TrayPanel({ checklist, projects, onAssign, open, onToggle }: {
         </div>
       </aside>
 
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-surface border-t border-line z-20 max-h-[50vh] flex flex-col">
+      {/* Mobile bottom drawer */}
+      <div className="fixed inset-x-0 bottom-0 z-20 flex max-h-[50vh] flex-col border-t border-ink/10 bg-paper md:hidden">
         <button
           onClick={onToggle}
-          className="px-4 py-2 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-ink-muted"
+          className="mono flex items-center justify-between px-4 py-3 text-[0.62rem] uppercase tracking-[0.28em] text-muted"
         >
-          <span>Unscheduled ({checklist.length + projects.length})</span>
-          <ChevronDown size={14} className={`chev-toggle ${open ? 'rotate-180' : ''}`} />
+          <span>unscheduled ({checklist.length + projects.length})</span>
+          <ChevronDown size={14} className={cn('chev-toggle', open && 'rotate-180')} />
         </button>
         {open && (
-          <div className="overflow-auto p-2 space-y-1 border-t border-line-light">
-            {empty && <p className="text-[12px] text-ink-muted px-2 py-4">All caught up.</p>}
+          <div className="space-y-1 overflow-auto border-t border-ink/10 p-2">
+            {empty && (
+              <p className="mono px-2 py-4 text-[0.62rem] uppercase tracking-[0.24em] text-muted">
+                all caught up.
+              </p>
+            )}
             {projects.map(p => (
               <TrayItem key={`p-${p.id}`} label={p.title} kind="project" onClick={() => onAssign('project', p)} />
             ))}
@@ -498,12 +554,15 @@ function TrayItem({ label, kind, onClick }: { label: string; kind: 'project' | '
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-2 py-1.5 rounded text-[13px] text-ink-secondary hover:bg-canvas hover:text-ink border border-transparent hover:border-line flex items-center gap-2"
+      className="group flex w-full items-center gap-2 px-2 py-2 text-left transition-colors hover:bg-cream"
     >
-      <span className={`text-[9px] uppercase tracking-wider px-1 py-0.5 rounded ${
-        kind === 'project' ? 'bg-blueprint-light text-blueprint' : 'bg-canvas text-ink-muted'
-      }`}>{kind === 'project' ? 'proj' : 'todo'}</span>
-      <span className="truncate">{label}</span>
+      <span className={cn(
+        'mono px-1.5 py-0.5 text-[0.54rem] uppercase tracking-[0.22em]',
+        kind === 'project' ? 'bg-viral/20 text-viral' : 'bg-ink/5 text-muted',
+      )}>
+        {kind === 'project' ? 'proj' : 'todo'}
+      </span>
+      <span className="serif truncate text-[0.92rem] text-ink group-hover:text-viral">{label || 'untitled'}</span>
     </button>
   )
 }
@@ -520,40 +579,66 @@ function AddBlockModal({ state, projects, checklist, onClose, onSubmit }: {
   const [checklistId, setChecklistId] = useState<string>('')
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="sheet-in w-full max-w-sm bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
-        <p className="text-[11px] uppercase tracking-[0.2em] text-ink-muted mb-1">Add block</p>
-        <p className="text-sm text-ink mb-3">{minToLabel(state.start_min)} – {minToLabel(state.end_min)}</p>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/40 p-4" onClick={onClose}>
+      <div
+        className="sheet-in w-full max-w-md rule-top rule-bottom border-ink/10 bg-paper p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <p className="mono text-[0.62rem] uppercase tracking-[0.28em] text-muted">add · block</p>
+        <p className="serif mt-2 text-[1.5rem] leading-tight text-ink tnum">
+          {minToLabel(state.start_min)} · {minToLabel(state.end_min)}
+        </p>
 
-        <label className="text-[11px] uppercase tracking-wider text-ink-muted">Label</label>
-        <input autoFocus value={label} onChange={e => setLabel(e.target.value)}
-          placeholder="What will you do?"
-          className="w-full mt-1 mb-3 px-2 py-1.5 text-sm bg-canvas border border-line rounded" />
+        <label className="mono mt-6 block text-[0.58rem] uppercase tracking-[0.28em] text-muted">label</label>
+        <input
+          autoFocus
+          value={label}
+          onChange={e => setLabel(e.target.value)}
+          placeholder="what will you do?"
+          className="input-underline mt-1"
+        />
 
-        <label className="text-[11px] uppercase tracking-wider text-ink-muted">Link to project (optional)</label>
-        <select value={projectId} onChange={e => { setProjectId(e.target.value); if (e.target.value) setChecklistId('') }}
-          className="w-full mt-1 mb-3 px-2 py-1.5 text-sm bg-canvas border border-line rounded">
-          <option value="">— none —</option>
+        <label className="mono mt-5 block text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+          link to project (optional)
+        </label>
+        <select
+          value={projectId}
+          onChange={e => { setProjectId(e.target.value); if (e.target.value) setChecklistId('') }}
+          className="mono mt-2 w-full border-b border-ink/20 bg-transparent py-2 text-[0.85rem] outline-none focus:border-viral"
+        >
+          <option value="">· none ·</option>
           {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
         </select>
 
-        <label className="text-[11px] uppercase tracking-wider text-ink-muted">Or checklist item</label>
-        <select value={checklistId} onChange={e => { setChecklistId(e.target.value); if (e.target.value) setProjectId('') }}
-          className="w-full mt-1 mb-4 px-2 py-1.5 text-sm bg-canvas border border-line rounded">
-          <option value="">— none —</option>
+        <label className="mono mt-5 block text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+          or checklist item
+        </label>
+        <select
+          value={checklistId}
+          onChange={e => { setChecklistId(e.target.value); if (e.target.value) setProjectId('') }}
+          className="mono mt-2 w-full border-b border-ink/20 bg-transparent py-2 text-[0.85rem] outline-none focus:border-viral"
+        >
+          <option value="">· none ·</option>
           {checklist.filter(c => c.status !== 'done').map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>
 
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm text-ink-muted hover:text-ink">Cancel</button>
+        <div className="mt-8 flex justify-end gap-4">
+          <button
+            onClick={onClose}
+            className="mono text-[0.68rem] uppercase tracking-[0.24em] text-muted hover:text-ink"
+          >
+            cancel
+          </button>
           <button
             onClick={() => onSubmit({
               label: label || null,
               project_id: projectId || null,
               checklist_item_id: checklistId || null,
             })}
-            className="px-3 py-1.5 text-sm bg-blueprint text-white rounded hover:bg-blueprint-dark"
-          >Add</button>
+            className="mono inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink"
+          >
+            add block
+          </button>
         </div>
       </div>
     </div>
@@ -571,48 +656,79 @@ function MITPickerModal({ checklist, projects, onClose, onPick }: {
   const todayProjects = projects.filter(p => p.scheduled_date?.split('T')[0] === today || !p.scheduled_date)
 
   return (
-    <div className="fixed inset-0 z-40 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="sheet-in w-full max-w-md bg-surface rounded-xl border border-line shadow-xl p-4" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center gap-2 mb-3">
-          <Pin size={14} className="text-blueprint" />
-          <p className="text-sm font-medium text-ink">Pin your MIT</p>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-ink/40 p-4" onClick={onClose}>
+      <div
+        className="sheet-in w-full max-w-md rule-top rule-bottom border-ink/10 bg-paper p-6"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="mb-2 flex items-center gap-2">
+          <Pin size={13} className="text-viral" />
+          <p className="mono text-[0.62rem] uppercase tracking-[0.28em] text-viral">pin your mit</p>
         </div>
-        <p className="text-[11px] text-ink-muted mb-3">One thing that makes today a win.</p>
+        <p className="serif mt-2 text-[1.4rem] leading-tight text-ink">
+          one thing that makes today a <span className="serif-italic">win</span>.
+        </p>
 
-        <div className="flex gap-2 mb-4">
-          <input value={custom} onChange={e => setCustom(e.target.value)}
-            placeholder="Write it yourself…"
-            className="flex-1 px-2 py-1.5 text-sm bg-canvas border border-line rounded" />
-          <button disabled={!custom.trim()}
+        <div className="mt-6 flex items-end gap-3">
+          <input
+            value={custom}
+            onChange={e => setCustom(e.target.value)}
+            placeholder="write it yourself…"
+            className="input-underline flex-1"
+          />
+          <button
+            disabled={!custom.trim()}
             onClick={() => onPick({ label: custom.trim() })}
-            className="px-3 py-1.5 text-sm bg-blueprint text-white rounded disabled:opacity-40 hover:bg-blueprint-dark">
-            Pin
+            className="mono inline-flex shrink-0 items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-[0.68rem] uppercase tracking-[0.24em] text-cream transition hover:bg-viral hover:text-ink disabled:opacity-40 disabled:pointer-events-none"
+          >
+            pin
           </button>
         </div>
 
-        <p className="text-[11px] uppercase tracking-wider text-ink-muted mb-2">From pipeline</p>
-        <div className="max-h-40 overflow-auto mb-3 space-y-0.5">
+        <p className="mono mt-8 text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+          from pipeline
+        </p>
+        <div className="mt-2 max-h-40 divide-y divide-ink/10 overflow-auto rule-top rule-bottom">
           {todayProjects.slice(0, 12).map(p => (
-            <button key={p.id} onClick={() => onPick({ project_id: p.id, label: p.title })}
-              className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-canvas text-ink-secondary truncate">
-              {p.title}
+            <button
+              key={p.id}
+              onClick={() => onPick({ project_id: p.id, label: p.title })}
+              className="serif flex w-full items-center gap-2 px-2 py-2 text-left text-[0.95rem] text-ink hover:bg-cream"
+            >
+              <span className="mono shrink-0 text-[0.54rem] uppercase tracking-[0.22em] text-muted">proj</span>
+              <span className="flex-1 truncate">{p.title}</span>
             </button>
           ))}
-          {todayProjects.length === 0 && <p className="text-[12px] text-ink-muted px-2">No projects.</p>}
+          {todayProjects.length === 0 && (
+            <p className="mono px-2 py-3 text-[0.6rem] uppercase tracking-[0.24em] text-muted">
+              no projects.
+            </p>
+          )}
         </div>
 
-        <p className="text-[11px] uppercase tracking-wider text-ink-muted mb-2">From checklist</p>
-        <div className="max-h-40 overflow-auto space-y-0.5">
+        <p className="mono mt-6 text-[0.58rem] uppercase tracking-[0.28em] text-muted">
+          from checklist
+        </p>
+        <div className="mt-2 max-h-40 divide-y divide-ink/10 overflow-auto rule-top rule-bottom">
           {checklist.filter(c => c.status !== 'done').slice(0, 12).map(c => (
-            <button key={c.id} onClick={() => onPick({ checklist_item_id: c.id, label: c.title })}
-              className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-canvas text-ink-secondary truncate">
-              {c.title}
+            <button
+              key={c.id}
+              onClick={() => onPick({ checklist_item_id: c.id, label: c.title })}
+              className="serif flex w-full items-center gap-2 px-2 py-2 text-left text-[0.95rem] text-ink hover:bg-cream"
+            >
+              <span className="mono shrink-0 text-[0.54rem] uppercase tracking-[0.22em] text-muted">todo</span>
+              <span className="flex-1 truncate">{c.title}</span>
             </button>
           ))}
         </div>
 
-        <div className="flex justify-end mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm text-ink-muted hover:text-ink">Close</button>
+        <div className="mt-8 flex justify-end">
+          <button
+            onClick={onClose}
+            className="mono text-[0.68rem] uppercase tracking-[0.24em] text-muted hover:text-ink"
+          >
+            close
+          </button>
         </div>
       </div>
     </div>

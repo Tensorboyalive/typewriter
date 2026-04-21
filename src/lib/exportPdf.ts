@@ -1,6 +1,7 @@
 import { format } from 'date-fns'
 import { linkify } from './linkify'
 import type { Project, Note } from '../types'
+import { BRAND_INK_SOFT, BRAND_MUTED, BRAND_VIRAL } from './brand'
 
 // A4 portrait, millimetres. 18mm margins give comfortable reading width.
 const PAGE_WIDTH = 210
@@ -13,19 +14,10 @@ const BODY_SIZE = 11
 const FOOTER_SIZE = 8
 const LINE_HEIGHT = 1.5
 
-// Brand orange in RGB (matches --color-blueprint: #f97316).
-const LINK_R = 249
-const LINK_G = 115
-const LINK_B = 22
-
-// Neutral ink colors.
-const INK_R = 30
-const INK_G = 30
-const INK_B = 30
-
-const MUTED_R = 120
-const MUTED_G = 120
-const MUTED_B = 120
+// Canonical brand colors from lib/brand.ts. Do NOT duplicate hex values here.
+const [LINK_R, LINK_G, LINK_B] = BRAND_VIRAL
+const [INK_R, INK_G, INK_B] = BRAND_INK_SOFT
+const [MUTED_R, MUTED_G, MUTED_B] = BRAND_MUTED
 
 function slugify(input: string): string {
   return (input || 'untitled')
