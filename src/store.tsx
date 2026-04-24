@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { format } from 'date-fns'
 import { supabase } from './lib/supabase'
+import { DEFAULT_UI_PREFS, parseUIPrefs, setPipelinePrefs, type UIPrefs, type PipelinePrefs } from './lib/uiPrefs'
 
 // Local-time YYYY-MM-DD. Do NOT use toISOString().split('T')[0] — that's UTC,
 // which breaks the checklist "today" filter for any user outside UTC.
@@ -71,6 +72,10 @@ interface StoreContextType {
   /** Set when the initial fetchData call fails — show a retry banner. */
   fetchError: string | null
   retryFetch: () => void
+
+  // UI preferences (cloud-synced via user_settings.ui_prefs)
+  uiPrefs: UIPrefs
+  updatePipelinePrefs: (patch: Partial<PipelinePrefs>) => void
 
   addProject: (p: { title: string; type?: string | null; status: string; platform?: string; scheduled_date?: string | null; script?: string; description?: string; format?: string | null }) => Promise<Project>
   updateProject: (id: string, updates: Partial<Project>) => Promise<void>
@@ -148,6 +153,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [dataLoading, setDataLoading] = useState(true)
   const [fetchError, setFetchError] = useState<string | null>(null)
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithProfile[]>([])
+  const [uiPrefs, setUIPrefs] = useState<UIPrefs>(DEFAULT_UI_PREFS)
+  const uiPrefsSaveTimer = useRef<number | null>(null)
 
   const activeChannel = channels.find(c => c.id === activeChannelId) ?? null
 
@@ -313,6 +320,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setChecklistItems(cRes.data ?? [])
       setChecklistTemplates(tRes.data ?? [])
       setConversionRateState(settRes.data?.conversion_rate ?? 84)
+      // ui_prefs may be undefined until migration 020 is applied — parseUIPrefs
+      // falls back to defaults gracefully, so this works in either state.
+      if (settRes.data && 'ui_prefs' in settRes.data) {
+        setUIPrefs(parseUIPrefs(settRes.data.ui_prefs))
+      }
       setAllProjects(coerce(apRes.data))
       setAllSessions(asRes.data ?? [])
     } catch (err) {
@@ -627,6 +639,36 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     if (data) setEditorOutputs(data)
   }
 
+  /**
+   * Update pipeline prefs. Optimistic local state + debounced remote write.
+   * If the ui_prefs column doesn't exist yet (migration 020 not applied),
+   * the write fails silently — local prefs still work for the session.
+   */
+  const updatePipelinePrefs = useCallback((patch: Partial<PipelinePrefs>) => {
+    setUIPrefs(prev => {
+      const next = setPipelinePrefs(prev, patch)
+
+      if (uiPrefsSaveTimer.current) window.clearTimeout(uiPrefsSaveTimer.current)
+      uiPrefsSaveTimer.current = window.setTimeout(() => {
+        if (!user) return
+        supabase
+          .from('user_settings')
+          .update({ ui_prefs: next, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .then(({ error }) => {
+            // Graceful degradation: if migration 020 hasn't run yet the column
+            // won't exist (code 42703 / PGRST204). Don't toast the user — they
+            // still see their prefs locally for the session.
+            if (error && error.code !== '42703' && error.code !== 'PGRST204') {
+              console.warn('[ui_prefs] save failed', error)
+            }
+          })
+      }, 500)
+
+      return next
+    })
+  }, [user])
+
   const setConversionRate = async (rate: number) => {
     setConversionRateState(rate)
     const { error } = await supabase.from('user_settings').update({ conversion_rate: rate, updated_at: new Date().toISOString() }).eq('user_id', user!.id)
@@ -760,6 +802,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setConversionRate, exportAllData,
       persona, setPersona,
       timeBlocks, fetchTimeBlocks, addTimeBlock, updateTimeBlock, deleteTimeBlock, setMIT,
+      uiPrefs, updatePipelinePrefs,
     }}>
       {children}
     </StoreContext.Provider>

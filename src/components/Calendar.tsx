@@ -16,6 +16,7 @@ import {
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { useStore } from '../store'
 import { CONTENT_FORMATS, type ContentFormat } from '../types'
+import { STATUS_VISUAL } from '../lib/statusColors'
 import { Select } from './Select'
 
 export function Calendar() {
@@ -118,19 +119,28 @@ export function Calendar() {
                 {format(day, 'd')}
               </span>
               <div className="mt-1 space-y-1">
-                {dayProjects.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={e => {
-                      e.stopPropagation()
-                      navigate(`/projects/${p.id}`)
-                    }}
-                    className="block w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all bg-blueprint-light text-blueprint"
-                    title={p.title}
-                  >
-                    {p.title}
-                  </button>
-                ))}
+                {dayProjects.map(p => {
+                  const visual = STATUS_VISUAL[p.status]
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={e => {
+                        e.stopPropagation()
+                        navigate(`/projects/${p.id}`)
+                      }}
+                      aria-label={`${p.title} \u2014 ${visual.ariaLabel}`}
+                      className="flex items-center gap-1.5 w-full text-left text-[11px] px-1.5 py-0.5 rounded truncate font-medium hover:ring-1 hover:ring-blueprint transition-all bg-surface border border-line text-ink"
+                      title={`${p.title} \u00b7 ${visual.label}`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+                        style={{ backgroundColor: visual.tokenVar }}
+                      />
+                      <span className="truncate">{p.title}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )
@@ -179,17 +189,24 @@ export function Calendar() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted mb-1">
                 On this day — click to open
               </p>
-              {getProjectsForDay(selectedDate).map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => navigate(`/projects/${p.id}`)}
-                  className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
-                >
-                  <span className="w-2 h-2 rounded-full shrink-0 bg-blueprint" />
-                  <span className="flex-1 truncate">{p.title}</span>
-                  <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{p.status}</span>
-                </button>
-              ))}
+              {getProjectsForDay(selectedDate).map(p => {
+                const visual = STATUS_VISUAL[p.status]
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => navigate(`/projects/${p.id}`)}
+                    className="w-full flex items-center gap-2 text-sm text-ink-secondary text-left px-2 py-1.5 rounded-md hover:bg-canvas border border-transparent hover:border-line transition-all"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: visual.tokenVar }}
+                    />
+                    <span className="flex-1 truncate">{p.title}</span>
+                    <span className="text-[10px] uppercase tracking-wider text-ink-muted shrink-0">{visual.label}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
 

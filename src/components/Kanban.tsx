@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3 } from 'lucide-react'
+import { Plus, ChevronDown, ChevronRight, List, Columns3, Rows3, Rows2 } from 'lucide-react'
 import { useStore } from '../store'
 import { PIPELINE_STAGES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat, type Project } from '../types'
-
-type ViewMode = 'list' | 'board'
+import { STATUS_VISUAL } from '../lib/statusColors'
+import { usePipelineRestore } from '../lib/usePipelineRestore'
 
 const UNSCHEDULED_KEY = '__unscheduled__'
 
@@ -42,18 +42,28 @@ function groupByScheduledDate(items: Project[]): Array<[string, Project[]]> {
 }
 
 export function Kanban() {
-  const { projects, addProject, activeChannel } = useStore()
+  const { projects, addProject, activeChannel, uiPrefs, updatePipelinePrefs } = useStore()
+  const { viewMode, rowDensity, showReady, collapsed } = uiPrefs.pipeline
   const navigate = useNavigate()
+  const { glowId, snapshotBeforeNav } = usePipelineRestore()
+
   const [adding, setAdding] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [newFormat, setNewFormat] = useState<ContentFormat>('reel')
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
-  const toggleGroup = (id: string) =>
-    setCollapsed(prev => ({ ...prev, [id]: !prev[id] }))
+  const toggleGroup = (id: string) => {
+    updatePipelinePrefs({
+      collapsed: { ...collapsed, [id]: !collapsed[id] },
+    })
+  }
 
-  const filtered = projects
+  const readyCount = projects.filter(p => p.status === 'ready').length
+  const filtered = showReady ? projects : projects.filter(p => p.status !== 'ready')
+
+  const handleCardClick = (projectId: string) => {
+    snapshotBeforeNav(projectId)
+    navigate(`/projects/${projectId}`)
+  }
 
   const handleAdd = async () => {
     if (!newTitle.trim()) return
@@ -70,7 +80,10 @@ export function Kanban() {
     setNewTitle('')
     setNewFormat('reel')
     setAdding(false)
-    if (project) navigate(`/projects/${project.id}`)
+    if (project) {
+      snapshotBeforeNav(project.id)
+      navigate(`/projects/${project.id}`)
+    }
   }
 
   const renderFormatTag = (fmt: ContentFormat | null | undefined, size: 'sm' | 'md' = 'sm') => {
@@ -87,17 +100,36 @@ export function Kanban() {
     )
   }
 
-  const renderProjectCard = (project: typeof projects[0], compact = false) => {
+  /**
+   * Row rendering branches on:
+   *  - `boardMode`: tiny stacked cards for the 3-column Board view
+   *  - `rowDensity`: 'compact' (32px) vs 'comfortable' for the List view
+   * Every variant includes the status dot + label (color-not-only) and the
+   * returning-card glow class when `project.id === glowId`.
+   */
+  const renderProjectCard = (project: typeof projects[0], boardMode = false) => {
     const platInfo = PLATFORMS.find(p => p.id === project.platform)
+    const visual = STATUS_VISUAL[project.status]
+    const isReady = project.status === 'ready'
+    const glowClass = glowId === project.id ? 'pipeline-row--returning' : ''
+    const mutedClass = showReady && isReady ? 'opacity-50' : ''
 
-    if (compact) {
+    if (boardMode) {
       return (
-        <div
+        <button
           key={project.id}
-          onClick={() => navigate(`/projects/${project.id}`)}
-          className="card-hover stagger-in bg-surface border border-line rounded-md px-3 py-2 cursor-pointer hover:border-blueprint/40"
+          onClick={() => handleCardClick(project.id)}
+          aria-label={`${project.title} — ${visual.ariaLabel}`}
+          className={`card-hover stagger-in block w-full text-left bg-surface border border-line rounded-md px-3 py-2 cursor-pointer hover:border-blueprint/40 ${glowClass} ${mutedClass}`}
         >
-          <p className="text-[12px] text-ink font-medium truncate mb-1.5">{project.title}</p>
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span
+              aria-hidden="true"
+              className="inline-block w-1.5 h-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: visual.tokenVar }}
+            />
+            <p className="text-[12px] text-ink font-medium truncate">{project.title}</p>
+          </div>
           <div className="flex items-center gap-1.5 flex-wrap">
             {renderFormatTag(project.format)}
             {platInfo && (
@@ -108,26 +140,61 @@ export function Kanban() {
                 {platInfo.label}
               </span>
             )}
-            {project.deadline && (
-              <span className="text-[9px] text-warning flex items-center gap-0.5">
-                <Clock size={9} />
-                {new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </span>
-            )}
-            {project.is_brand_deal && (
-              <span className="text-[8px] px-1 py-0.5 rounded bg-warning-light text-warning font-medium">$</span>
-            )}
+            <span className="text-[9px] text-ink-muted lowercase ml-auto">{visual.label}</span>
           </div>
-        </div>
+        </button>
       )
     }
 
+    if (rowDensity === 'compact') {
+      return (
+        <button
+          key={project.id}
+          onClick={() => handleCardClick(project.id)}
+          aria-label={`${project.title} — ${visual.ariaLabel}`}
+          className={`pipeline-row w-full grid items-center gap-2.5 h-8 px-3 rounded-md border border-line bg-surface text-left hover:border-blueprint/40 transition-colors ${glowClass} ${mutedClass}`}
+          style={{ gridTemplateColumns: '10px minmax(0,1fr) auto auto auto auto' }}
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block w-[7px] h-[7px] rounded-full shrink-0"
+            style={{ backgroundColor: visual.tokenVar }}
+          />
+          <span className="text-[13px] text-ink font-medium truncate">{project.title}</span>
+          {renderFormatTag(project.format)}
+          {platInfo && (
+            <span
+              className="text-[9px] px-1.5 py-0.5 rounded font-medium"
+              style={{ backgroundColor: platInfo.color + '18', color: platInfo.color }}
+            >
+              {platInfo.label}
+            </span>
+          )}
+          <span className="text-[10px] text-ink-muted lowercase min-w-[56px] text-right tabular-nums">
+            {visual.label}
+          </span>
+          <span className="text-[10px] text-ink-muted tabular-nums min-w-[44px] text-right">
+            {project.scheduled_date
+              ? new Date(project.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+              : '—'}
+          </span>
+        </button>
+      )
+    }
+
+    // Comfortable row (existing layout) with status dot prefix
     return (
-      <div
+      <button
         key={project.id}
-        onClick={() => navigate(`/projects/${project.id}`)}
-        className="card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-4 py-3 cursor-pointer group hover:border-blueprint/40"
+        onClick={() => handleCardClick(project.id)}
+        aria-label={`${project.title} — ${visual.ariaLabel}`}
+        className={`pipeline-row card-hover stagger-in flex items-center gap-3 bg-surface border border-line rounded-md px-4 py-3 text-left w-full group hover:border-blueprint/40 ${glowClass} ${mutedClass}`}
       >
+        <span
+          aria-hidden="true"
+          className="inline-block w-2 h-2 rounded-full shrink-0"
+          style={{ backgroundColor: visual.tokenVar }}
+        />
         <p className="flex-1 text-sm text-ink font-medium truncate">{project.title}</p>
         <div className="flex items-center gap-2 shrink-0">
           {renderFormatTag(project.format, 'md')}
@@ -144,18 +211,11 @@ export function Kanban() {
               {new Date(project.scheduled_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
             </span>
           )}
-          {project.deadline && (
-            <span className="text-[10px] text-warning flex items-center gap-0.5">
-              <Clock size={10} />
-              {new Date(project.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-            </span>
-          )}
-          {project.delivery_link && <Link size={10} className="text-success" />}
-          {project.is_brand_deal && (
-            <span className="text-[9px] px-1 py-0.5 rounded bg-warning-light text-warning font-medium">$</span>
-          )}
+          <span className="text-[10px] text-ink-muted lowercase min-w-[56px] text-right">
+            {visual.label}
+          </span>
         </div>
-      </div>
+      </button>
     )
   }
 
@@ -173,18 +233,40 @@ export function Kanban() {
           <h2 className="text-2xl font-light text-ink">Content Pipeline</h2>
         </div>
         <div className="flex items-center gap-2">
+          {viewMode === 'list' && (
+            <div className="flex border border-line rounded-md overflow-hidden" title="Row density">
+              <button
+                onClick={() => updatePipelinePrefs({ rowDensity: 'compact' })}
+                className={`p-2 text-sm transition-colors ${rowDensity === 'compact' ? 'bg-blueprint text-white' : 'text-ink-muted hover:bg-canvas'}`}
+                title="Compact rows"
+                aria-pressed={rowDensity === 'compact'}
+              >
+                <Rows3 size={16} />
+              </button>
+              <button
+                onClick={() => updatePipelinePrefs({ rowDensity: 'comfortable' })}
+                className={`p-2 text-sm transition-colors ${rowDensity === 'comfortable' ? 'bg-blueprint text-white' : 'text-ink-muted hover:bg-canvas'}`}
+                title="Comfortable rows"
+                aria-pressed={rowDensity === 'comfortable'}
+              >
+                <Rows2 size={16} />
+              </button>
+            </div>
+          )}
           <div className="flex border border-line rounded-md overflow-hidden">
             <button
-              onClick={() => setViewMode('list')}
+              onClick={() => updatePipelinePrefs({ viewMode: 'list' })}
               className={`p-2 text-sm transition-colors ${viewMode === 'list' ? 'bg-blueprint text-white' : 'text-ink-muted hover:bg-canvas'}`}
               title="List view"
+              aria-pressed={viewMode === 'list'}
             >
               <List size={16} />
             </button>
             <button
-              onClick={() => setViewMode('board')}
+              onClick={() => updatePipelinePrefs({ viewMode: 'board' })}
               className={`p-2 text-sm transition-colors ${viewMode === 'board' ? 'bg-blueprint text-white' : 'text-ink-muted hover:bg-canvas'}`}
               title="Board view"
+              aria-pressed={viewMode === 'board'}
             >
               <Columns3 size={16} />
             </button>
@@ -199,14 +281,44 @@ export function Kanban() {
       </div>
 
       {/* Inline stage summary */}
-      <div className="mb-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-muted">
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-ink-muted">
         {stageSummary.map((s, i) => (
           <span key={s.label} className="flex items-center gap-3">
             <span><span className="text-ink font-medium tabular-nums">{s.count}</span> {s.label}</span>
             {i < stageSummary.length - 1 && <span className="text-line">·</span>}
           </span>
         ))}
+        {!showReady && readyCount > 0 && (
+          <span className="text-ink-muted">
+            · <span className="tabular-nums">{readyCount}</span> ready hidden
+          </span>
+        )}
       </div>
+
+      {/* Ready visibility toggle chip. Only visible when ready items exist. */}
+      {readyCount > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => updatePipelinePrefs({ showReady: !showReady })}
+            className={`text-[11px] inline-flex items-center gap-1.5 px-3 py-1 rounded-full border transition-colors ${
+              showReady
+                ? 'border-success/40 bg-success-light/20 text-success'
+                : 'border-line text-ink-muted bg-surface hover:border-blueprint/40'
+            }`}
+            aria-pressed={showReady}
+            title={showReady ? 'Hide ready items' : 'Show ready items'}
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block w-[7px] h-[7px] rounded-full"
+              style={{ backgroundColor: 'var(--status-ready)' }}
+            />
+            {showReady
+              ? <>Showing ready ({readyCount}) — click to hide</>
+              : <>Ready hidden ({readyCount}) — click to show</>}
+          </button>
+        </div>
+      )}
 
       {/* Quick Add — title + format picker. */}
       {adding && (

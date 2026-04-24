@@ -28,6 +28,9 @@ export const PIPELINE_STAGES: { id: PipelineStage; label: string; statuses: Proj
   { id: 'posted',     label: 'Posted',     statuses: ['posted'] },
 ]
 
+// Re-export UIPrefs types so components can import from the central types module.
+export type { UIPrefs, PipelinePrefs, ViewMode, RowDensity } from './lib/uiPrefs'
+
 export const CONTENT_TYPES: { id: ContentType; label: string; color: string }[] = [
   { id: 'reel', label: 'Reel', color: '#8b5cf6' },
   { id: 'story', label: 'Story', color: '#f59e0b' },

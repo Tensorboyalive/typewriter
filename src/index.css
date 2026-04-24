@@ -265,3 +265,37 @@ html.dark .card-hover:hover {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── Status color system (pipeline + calendar parity) ───────────────
+   Light values tuned for light surface, .dark overrides with the
+   palette that reads on the dark canvas. Passes WCAG 3:1 non-text on
+   both themes. Every consumer pairs the token with a visible label — we
+   never rely on color alone (accessibility: color-not-only).
+   ────────────────────────────────────────────────────────────────── */
+:root {
+  --status-idea:     oklch(60% 0.15 255);
+  --status-scripted: oklch(70% 0.14 70);
+  --status-edit:     oklch(65% 0.17 300);
+  --status-ready:    oklch(65% 0.14 160);
+  --status-posted:   oklch(55% 0.02 240);
+}
+
+.dark {
+  --status-idea:     #7aa2ff;
+  --status-scripted: #f5b851;
+  --status-edit:     #c88cff;
+  --status-ready:    #4fd19c;
+  --status-posted:   #6b7681;
+}
+
+/* Compact row returning-card glow pulse.
+   Compositor-friendly (shadow + border-color only, no layout reflow). */
+@keyframes pipeline-return-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(246, 138, 79, 0.22); }
+  50%      { box-shadow: 0 0 0 6px rgba(246, 138, 79, 0.06); }
+}
+
+.pipeline-row--returning {
+  animation: pipeline-return-pulse 700ms ease-out 2;
+  border-color: rgba(246, 138, 79, 0.7) !important;
+}
