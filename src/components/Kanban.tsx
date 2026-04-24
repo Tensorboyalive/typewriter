@@ -1,11 +1,45 @@
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { format, isToday, isTomorrow, isYesterday, parseISO } from 'date-fns'
 import { useNavigate } from 'react-router-dom'
 import { Plus, ChevronDown, ChevronRight, Clock, Link, List, Columns3 } from 'lucide-react'
 import { useStore } from '../store'
-import { PIPELINE_STAGES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat } from '../types'
+import { PIPELINE_STAGES, CONTENT_FORMATS, PLATFORMS, type Platform, type ContentFormat, type Project } from '../types'
 
 type ViewMode = 'list' | 'board'
+
+const UNSCHEDULED_KEY = '__unscheduled__'
+
+function formatDateLabel(dateKey: string): string {
+  if (dateKey === UNSCHEDULED_KEY) return 'Unscheduled'
+  const d = parseISO(dateKey)
+  if (Number.isNaN(d.getTime())) return 'Unscheduled'
+  if (isToday(d)) return `Today · ${format(d, 'MMM d')}`
+  if (isTomorrow(d)) return `Tomorrow · ${format(d, 'MMM d')}`
+  if (isYesterday(d)) return `Yesterday · ${format(d, 'MMM d')}`
+  return format(d, 'EEE, MMM d')
+}
+
+// Group projects by scheduled_date (ISO YYYY-MM-DD). Nulls/invalid go to
+// a single "__unscheduled__" bucket. Returns entries sorted newest-first,
+// with unscheduled pinned to the bottom — matches the current list order
+// shown on the Pipeline screen.
+function groupByScheduledDate(items: Project[]): Array<[string, Project[]]> {
+  const buckets: Record<string, Project[]> = {}
+  for (const p of items) {
+    const key = p.scheduled_date && /^\d{4}-\d{2}-\d{2}/.test(p.scheduled_date)
+      ? p.scheduled_date.slice(0, 10)
+      : UNSCHEDULED_KEY
+    if (!buckets[key]) buckets[key] = []
+    buckets[key].push(p)
+  }
+  const entries = Object.entries(buckets)
+  entries.sort(([a], [b]) => {
+    if (a === UNSCHEDULED_KEY) return 1
+    if (b === UNSCHEDULED_KEY) return -1
+    return b.localeCompare(a)
+  })
+  return entries
+}
 
 export function Kanban() {
   const { projects, addProject, activeChannel } = useStore()
@@ -243,23 +277,56 @@ export function Kanban() {
       )}
 
       {/* ─── LIST VIEW ──────────────────────────────────── */}
+      {/*
+        Two-level grouping: stage → scheduled_date.
+        Both levels collapsible; date keys are composite (`${stageId}:${dateKey}`)
+        to avoid collision with stage keys.
+      */}
       {viewMode === 'list' && (
         <>
           {PIPELINE_STAGES.map(stage => {
             const items = filtered.filter(p => stage.statuses.includes(p.status))
             if (items.length === 0) return null
-            const isCollapsed = collapsed[stage.id]
+            const isStageCollapsed = collapsed[stage.id]
+            const dateGroups = groupByScheduledDate(items)
 
             return (
-              <div key={stage.id} className="mb-4">
-                <button onClick={() => toggleGroup(stage.id)} className="flex items-center gap-2 mb-2 group">
-                  {isCollapsed ? <ChevronRight size={14} className="text-ink-muted" /> : <ChevronDown size={14} className="text-ink-muted" />}
+              <div key={stage.id} className="mb-6">
+                <button onClick={() => toggleGroup(stage.id)} className="flex items-center gap-2 mb-3 group">
+                  {isStageCollapsed ? <ChevronRight size={14} className="text-ink-muted" /> : <ChevronDown size={14} className="text-ink-muted" />}
                   <p className="text-[10px] uppercase tracking-[0.2em] text-ink-muted">{stage.label}</p>
                   <span className="text-[10px] bg-canvas text-ink-muted px-1.5 py-0.5 rounded-full">{items.length}</span>
                 </button>
-                {!isCollapsed && (
-                  <div className="space-y-1.5">
-                    {items.map(project => renderProjectCard(project))}
+
+                {!isStageCollapsed && (
+                  <div className="space-y-3">
+                    {dateGroups.map(([dateKey, dateItems]) => {
+                      const groupKey = `${stage.id}:${dateKey}`
+                      const isDateCollapsed = collapsed[groupKey]
+                      return (
+                        <div key={groupKey}>
+                          <button
+                            onClick={() => toggleGroup(groupKey)}
+                            className="flex items-center gap-2 mb-1.5 pl-1 w-full text-left"
+                          >
+                            {isDateCollapsed
+                              ? <ChevronRight size={12} className="text-ink-muted" />
+                              : <ChevronDown size={12} className="text-ink-muted" />}
+                            <span className="text-[11px] text-ink-secondary font-medium tabular-nums">
+                              {formatDateLabel(dateKey)}
+                            </span>
+                            <span className="text-[10px] text-ink-muted">·</span>
+                            <span className="text-[10px] text-ink-muted tabular-nums">{dateItems.length}</span>
+                            <span className="flex-1 h-px bg-line/60 ml-2" />
+                          </button>
+                          {!isDateCollapsed && (
+                            <div className="space-y-1.5">
+                              {dateItems.map(project => renderProjectCard(project))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>
